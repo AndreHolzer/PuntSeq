@@ -17,17 +17,16 @@ output:
     number_sections: false
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 # Part 0: Initiation
 
-This markdown allows to reproduce the downstream processing performed on minimap2 classifier outputs. It combines R, Python and Bash code and requires the following packages/dependencies to be installed on your computer before execution:
+This R markdown file allows to reproduce the downstream processing performed on minimap2 classifier outputs. It combines R, Python and Bash code and requires the following packages/dependencies to be installed on your computer before execution:
 
-1.) You will need to have a version of conda installed. Please read here (https://conda.io/projects/conda/en/latest/user-guide/install/index.html?highlight=conda) how to install conda.
+1.) R version 4.0.3 or higher. Read here (https://www.r-project.org) how to install.
 
-2.) Download the conda environment.yml file ("PuntSeq-analysis-env.yml") from our GitHub repository (https://github.com/d-j-k/puntseq) and create a local environment with the environment.yml file by executing the follwoing command from your shell:
+2.) A version of conda. Please read here (https://conda.io/projects/conda/en/latest/user-guide/install/index.html?highlight=conda) how to install conda.
+
+3.) The conda environment.yml file ("PuntSeq-analysis-env.yml") from our GitHub repository (https://github.com/d-j-k/puntseq). Create a local environment with the environment.yml file by executing the follwoing command from your shell.
 
 ```{bash eval=FALSE}
 wget --no-check-certificate https://raw.githubusercontent.com/d-j-k/puntseq/master/conda_environment/PuntSeq-analysis-env.yaml
@@ -35,13 +34,14 @@ conda env create -f PuntSeq-analysis-env.yaml
 ```
 
 ## Installation & loading of required R packages
-All packages which are required to execulte the anaylsis will be loaded and if not already done so first installed on your machine. The following lines of code will do both automatically for you. (In case there should be any erros while trying to insall any package, please perform installation of the required packages manually)
-```{r eval=FALSE}
-list.of.packages = c("tidyverse","knitr","hash","RColorBrewer","scales","ggplot2", "ggpubr", "ggsci","FactoMineR", "factoextra","ggpmisc","stringr","reticulate","dendextend","pheatmap","grid") 
+All packages which are required to execulte the anaylsis will be loaded and if not already done so first installed on your machine. The following lines of code will do both automatically for you. (In case there should be any errors while trying to insall any package, please perform installation of the required packages manually)
+```{r}
+list.of.packages = c("tidyverse","knitr","hash","RColorBrewer","scales", "ggpubr", "ggsci","FactoMineR", "factoextra","ggpmisc","stringr","reticulate","dendextend","pheatmap","grid","ggrepel","RColorBrewer","extrafont","readxl","ggbeeswarm","car","gameofthrones") 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages) > 0) {install.packages(new.packages)}
 lapply(list.of.packages, require, character.only=T)
 ```
+
 ## Global variables and functions
 Next, global variables and functions are defined (Can be modify if nessesary)
 ```{r eval=FALSE}
@@ -71,6 +71,9 @@ tcolors <- c("April" = "#f0f0f0", "June" = "#bdbdbd", "August" = "#636363") # ge
           #c("April" = "#66c2a5", "June" = "#fc8d62", "August" = "#8da0cb") # qualitative
           #c("April" = "#e0ecf4", "June" = "#9ebcda", "August" = "#8856a7") # sequential
 
+# importing fonts
+font_import()
+
 # Scientfic scale function
 scientific_1 <- function(x) {
   parse(text=gsub("e", " %*% 10^", scales::scientific_format()(x)))
@@ -82,77 +85,150 @@ system(str_c("mkdir ",outfolder))
 ```
 
 ## Downloading classifier output data
-Classifier outputs comprising raw count data for all samples taken in April, June and August can directly be downloaded from our GitHub directory (https://github.com/d-j-k/puntseq). By executing the following lines of code this will automatically be performed saving the files to the "<OUTFOLDER>/Classifier_output" directory.
+Classifier outputs comprising raw count data for all samples obtained in April, June and August can directly be downloaded from our GitHub directory (https://github.com/d-j-k/puntseq). By executing the following lines of code this will automatically be performed saving the files to the "<OUTFOLDER>/Classifier_output" directory.
 ```{r eval=FALSE}
 # Create sub-output directory
 system(str_c("mkdir ",outfolder,"Classifier_output/"))
 
 # download classifier output data on family level for april samples
-infile_april_family <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_family_april.txt")
+infile_april_family <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/minimap2_family_april.txt")
 destfile_april_family=str_c(outfolder,"Classifier_output/",bcaller,"_April_",classifyr,"_family.tsv")
 if(!file.exists(destfile_april_family)){
   res <- tryCatch(download.file(infile_april_family, destfile_april_family, method="auto"), error=function(e) 1)
 }
 
 # download classifier output data on genus level for april samples
-infile_april_genus <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_genus_april.txt")
+infile_april_genus <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/minimap2_genus_april.txt")
 destfile_april_genus=str_c(outfolder,"Classifier_output/",bcaller,"_April_",classifyr,"_genus.tsv")
 if(!file.exists(destfile_april_genus)){
   res <- tryCatch(download.file(infile_april_genus, destfile_april_genus, method="auto"), error=function(e) 1)
 }
 
 # download classifier output data on family level for june samples
-infile_june_family <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_family_june.txt")
+infile_june_family <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/minimap2_family_june.txt")
 destfile_june_family=str_c(outfolder,"Classifier_output/",bcaller,"_June_",classifyr,"_family.tsv")
 if(!file.exists(destfile_june_family)){
   res <- tryCatch(download.file(infile_june_family, destfile_june_family, method="auto"), error=function(e) 1)
 }
 
 # download classifier output data on genus level for june samples
-infile_june_genus <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_genus_june.txt")
+infile_june_genus <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/minimap2_genus_june.txt")
 destfile_june_genus=str_c(outfolder,"Classifier_output/",bcaller,"_June_",classifyr,"_genus.tsv")
 if(!file.exists(destfile_june_genus)){
   res <- tryCatch(download.file(infile_june_genus, destfile_june_genus, method="auto"), error=function(e) 1)
 }
 
 # download classifier output data on family level for august samples
-infile_august_family <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_family_august.txt")
+infile_august_family <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/minimap2_family_august.txt")
 destfile_august_family=str_c(outfolder,"Classifier_output/",bcaller,"_August_",classifyr,"_family.tsv")
 if(!file.exists(destfile_august_family)){
   res <- tryCatch(download.file(infile_august_family, destfile_august_family, method="auto"), error=function(e) 1)
 }
 
 # download classifier output data on genus level for august samples
-infile_august_genus <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_genus_august.txt")
+infile_august_genus <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/minimap2_genus_august.txt")
 destfile_august_genus=str_c(outfolder,"Classifier_output/",bcaller,"_August_",classifyr,"_genus.tsv")
 if(!file.exists(destfile_august_genus)){
   res <- tryCatch(download.file(infile_august_genus, destfile_august_genus, method="auto"), error=function(e) 1)
 }
 
 # download total read numbers for all timepoints and locations
-infile_root <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/minimap2_k12_root_april-june-august.txt")
+infile_root <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/metadata/Number_classified_reads_minimap2.txt")
 destfile_root=str_c(outfolder,"Classifier_output/",bcaller,"_",classifyr,"_root_april-june-august.tsv")
 if(!file.exists(destfile_root)){
   res <- tryCatch(download.file(infile_root, destfile_root, method="auto"), error=function(e) 1)
 }
 ```
-## Downloading additional metadata
-```{r}
+
+## Downloading additional supplementary and metadata
+Similarly, metadata and supplementary tables are downloaded from our GitHub directory (https://github.com/d-j-k/puntseq) to the "<OUTFOLDER>/Classifier_output" directory.
+```{r eval=FALSE}
 # Create sub-output directory
 system(str_c("mkdir ",outfolder,"Metadata/"))
 
 # download metadata
-infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/metadata/Metadata_guppy_minimap2_table2.txt")
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/metadata/Metadata_guppy_minimap2_table2.txt")
 destfile_metadata=str_c(outfolder,"Metadata/Metadata_guppy_minimap2_table2.txt")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+# Create sub-output directory
+system(str_c("mkdir ",outfolder,"Supplementary_data/"))
+
+# download supplementary_data for benchmarking
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/2020-11-03_tool_benchmark_resources.xlsx")
+destfile_metadata=str_c(outfolder,"Supplementary_data/2020-11-03_tool_benchmark_resources.xlsx")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/2020-01-31_Minimap2_results_family_level_observed_vs_expected_full.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/2020-01-31_Minimap2_results_family_level_observed_vs_expected_full.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/2020-01-31_Minimap2_results_family_level_observed_vs_expected_withoutEntero.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/2020-01-31_Minimap2_results_family_level_observed_vs_expected_withoutEntero.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+# download supplementary_data for hydrochemical analysis
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/Gaillardet_1999_Table1.txt")
+destfile_metadata=str_c(outfolder,"Supplementary_data/Gaillardet_1999_Table1.txt")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+# download supplementary_data for clöassifier comparison
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/Fig_S1_b_table.xlsx")
+destfile_metadata=str_c(outfolder,"Supplementary_data/Fig_S1_b_table.xlsx")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/summary_poscon_april_family_majvote.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/summary_poscon_april_family_majvote.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/summary_poscon_june_family_majvote.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/summary_poscon_june_family_majvote.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/summary_poscon_august_family_majvote.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/summary_poscon_august_family_majvote.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/summary_sample8_rep1_family_majority_vote.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/summary_sample8_rep1_family_majority_vote.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/summary_sample8_rep2_family_majority_vote.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/summary_sample8_rep2_family_majority_vote.tsv")
+if(!file.exists(destfile_metadata)){
+  res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
+}
+
+infile_metadata <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/downstream_analysis/supplementary_data/summary_sample8_rep3_family_majority_vote.tsv")
+destfile_metadata=str_c(outfolder,"Supplementary_data/summary_sample8_rep3_family_majority_vote.tsv")
 if(!file.exists(destfile_metadata)){
   res <- tryCatch(download.file(infile_metadata, destfile_metadata, method="auto"), error=function(e) 1)
 }
 ```
 
 ## Initialise Python engine & conda environment
-```{r}
-# e. use python engine and conda enviornment
-
+To execute the code junks written in phyton we recommend to run knit python engine together with our conda enviornment.
+```{r eval=FALSE}
 #devtools::install_github("rstudio/reticulate") # install the developer version in case there are any errors with activating the conda environment
 library(reticulate)
 use_condaenv("PuntSeq-analysis-env", required = TRUE)
@@ -163,7 +239,7 @@ py_config()
 # Part 1: Downsampling & Quality Control
 ## Continuous rarefactions of 16S classifications
 ### Load data
-```{r}
+```{r eval=FALSE}
 # a. Classifications with minimap2 vs. SILVA 16S (release 132)
 classifications.genus <- classifications.family <- vector(mode = 'list', length = 3)
 names(classifications.genus) <- names(classifications.family) <- c("April", "June", "August")
@@ -184,7 +260,7 @@ ind <- ind[!is.na(ind)]; x <- x[,ind]; colnames(x)[grep('P',colnames(x))] <- 'Mo
 ```
 
 ### Sampling functions
-```{r}
+```{r eval=FALSE}
 # a. Sample
 sample_classifications <- function(x, n_rep, read_steps){
   
@@ -302,7 +378,7 @@ mmfit <- function(x, xlims, type){
  
 ### Rarefaction curves for Genus and Family 
 This section is only nessesary if a new subsampling should be performed.
-```{r}
+```{r eval=FALSE}
 if (dsampling == 1){
   
   # a. Parameters
@@ -394,7 +470,7 @@ if (dsampling == 1){
 ```
 
 ### Summarise information: total data vs. 37,000 reads
-```{r}
+```{r eval=FALSE}
 
 # i. Create output directories
 system(str_c("mkdir ",outfolder,"Downsampling/"))
@@ -404,7 +480,7 @@ system(str_c("mkdir ",outfolder,"Downsampling/family"))
 # ii. Download original downsampling dataset if required
 if (dsampling == 0){
   # download original rarefaction sampling data
-  infile_rarefaction <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/downsampled/2019-11-13_guppy_minimap2_sampling.Rdata")
+  infile_rarefaction <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/rarefied_data/2019-11-13_guppy_minimap2_sampling.Rdata")
   destfile_rarefaction=str_c(outfolder,"Downsampling/2019-11-13_guppy_minimap2_sampling.Rdata")
   if(!file.exists(infile_rarefaction)){
   res <- tryCatch(download.file(infile_rarefaction, destfile_rarefaction, method="auto"), error=function(e) 1)
@@ -415,7 +491,7 @@ if (dsampling == 0){
   for (level in c("family","genus")){
     for (location in c("1","2","3","4","5","6","7","8","9.1","9.2","Mock","N")){
       for (Time in c("April","June","August")){
-        infile_tmp <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/downsampled/2019-11-13_guppy_minimap2_sampling_37k/",level,"/",location,"-",Time,"_",level,".tsv")
+        infile_tmp <- str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/rarefied_data/2019-11-13_guppy_minimap2_sampling_37k/",level,"/",location,"-",Time,"_",level,".tsv")
         destfile_tmp=str_c(outfolder,"Downsampling/",level,"/",location,"-",Time,"_",level,".tsv")
         if(!file.exists(infile_tmp)){
         res <- tryCatch(download.file(infile_tmp, destfile_tmp, method="auto"), error=function(e) 1)
@@ -531,7 +607,7 @@ for (i in 1:12){
 ```
 
 ### Rarefaction Plots for 16S classifications  
-```{r}
+```{r eval=FALSE}
 # 2. Plotting functions
 #######################
 
@@ -1273,95 +1349,113 @@ legend('topright', c(paste('Pearson correlation: ', pearson.cor),
 dev.off()
 ```
 
-### *(Please check: AttributeError: 'DataFrame' object has no attribute 'taxRank', adjust directory of output files) Pull single downsampling datasets (and three replicates) for downstream analysis
-This section is only nessesary if a new subsampling should be performed.
+####  This section is only nessesary if a new subsampling should be performed
+To replicate the results from the manuscript, use puntseq/minimap2_classifications/rarefied_data/final_family_1.tsv here: https://github.com/d-j-k/puntseq; final_family_2.tsv, final_family_3.tsv and final_family_4.tsv are the three additional downsampled datasets used in the manuscript; genus-level downsampled data is available in the same folder
 ```{python, eval=FALSE}
-<!-- import datetime -->
-<!-- import pandas as pd  -->
-<!-- import io -->
-<!-- import os -->
-<!-- import requests -->
-<!-- import numpy as np -->
+import datetime 
+import pandas as pd
+import io
+import os
+import requests
+import numpy as np
 
-<!-- DATE = datetime.datetime.now().strftime('%Y-%m-%d') -->
-<!-- outfolder = DATE + '_PuntSeq_Downstream-metagenomics-analysis/' -->
-<!-- bcaller = 'Guppy' -->
-<!-- classifyr = 'minimap' -->
+DATE = datetime.datetime.now().strftime('%Y-%m-%d')
+outfolder = DATE + '_PuntSeq_Downstream-metagenomics-analysis/'
+bcaller = 'Guppy'
+classifyr = 'minimap'
 
-<!-- # build and save exemplar rarefaction dataframes  -->
-<!-- data = pd.read_csv(outfolder+'Downsampling/genus/%s' % os.listdir(outfolder+'Downsampling/genus/')[0], sep='\t', index_col=0, header=0) -->
-<!-- data = data[~data.index.duplicated(keep='first')] -->
-<!-- data = data[data.taxRank == 'G'] -->
-<!-- del data['taxRank'] -->
-<!-- datacolumns = [os.listdir(outfolder+'Downsampling/genus/')[0]] -->
-<!-- for filename in os.listdir(outfolder+'Downsampling/genus/')[1:]: -->
-<!--     if filename.endswith(".tsv"): -->
-<!--         data0 = pd.read_csv(outfolder+'Downsampling/genus/%s' %filename, sep='\t', index_col=0, header=0) -->
-<!--         data0 = data0[~data0.index.duplicated(keep='first')] -->
-<!--         data0 = data0[data0.taxRank == 'G'] -->
-<!--         del data0['taxRank'] -->
-<!--         data = pd.concat([data,data0], axis=1) -->
-<!--         datacolumns.append(filename) -->
+# build and save exemplary rarefaction dataframes
+# example on the genus level
+data = pd.read_csv(outfolder+'Downsampling/genus/%s' % os.listdir(outfolder+'Downsampling/genus/')[0], sep='\t', index_col=0, header=0) 
+data = data[~data.index.duplicated(keep='first')]
+data = data[data.taxRank == 'G']
+del data['taxRank']
+datacolumns = [os.listdir(outfolder+'Downsampling/genus/')[0]]
+for filename in os.listdir(outfolder+'Downsampling/genus/')[1:]:
+  if filename.endswith(".tsv"):
+    data0 = pd.read_csv(outfolder+'Downsampling/genus/%s' %filename, sep='\t', index_col=0, header=0)
+    data0 = data0[~data0.index.duplicated(keep='first')]
+    data0 = data0[data0.taxRank == 'G']
+    del data0['taxRank']
+    data = pd.concat([data,data0], axis=1)
+    datacolumns.append(filename)
 
-<!-- # choose samples with more than 37k reads in the full dataset to keep for downstream analyses   -->
-<!-- url = "https://raw.githubusercontent.com/d-j-k/puntseq/master/analysis/data/Analysis_bioRxiv/"+bcaller+"/April_"+classifyr+".tsv" -->
-<!-- s = requests.get(url).content -->
-<!-- full1 = pd.read_csv(io.StringIO(s.decode('utf-8')), sep='\t', index_col=0, header=0) -->
-<!-- full1 = full1[~full1.index.duplicated(keep='first')] -->
-<!-- full1 = full1[full1.taxRank=='G'] -->
-<!-- full1.iloc[:,3:15].sum()  -->
+# choose samples with more than 37k reads in the full dataset to keep for downstream analyses; in genus case:   -->
+datacolumns_filt = ['1-April_genus.tsv', 
+  '1-August_genus.tsv', 
+  '1-June_genus.tsv', 
+  '2-April_genus.tsv', 
+  '2-August_genus.tsv', 
+  '3-April_genus.tsv', 
+  '4-April_genus.tsv',
+  '4-August_genus.tsv', 
+  '5-April_genus.tsv',
+  '5-August_genus.tsv',
+  '6-August_genus.tsv', 
+  '6-June_genus.tsv', 
+  '7-April_genus.tsv', 
+  '8-April_genus.tsv', 
+  '9.1-August_genus.tsv', 
+  '9.2-August_genus.tsv', 
+  'Mock-April_genus.tsv',
+  'Mock-August_genus.tsv',
+  'Mock-June_genus.tsv', 
+  'N-August_genus.tsv']
 
-<!-- url = "https://raw.githubusercontent.com/d-j-k/puntseq/master/analysis/data/Analysis_bioRxiv/"+bcaller+"/June_"+classifyr+".tsv" -->
-<!-- s = requests.get(url).content -->
-<!-- full2 = pd.read_csv(io.StringIO(s.decode('utf-8')), sep='\t', index_col=0, header=0) -->
-<!-- full2 = full2[~full2.index.duplicated(keep='first')] -->
-<!-- full2 = full2[full2.taxRank=='G'] -->
-<!-- full2.iloc[:,3:15].sum()  -->
+posfilt = [np.where(np.array(datacolumns) == x)[0][0] for x in datacolumns_filt]
 
-<!-- url = "https://raw.githubusercontent.com/d-j-k/puntseq/master/analysis/data/Analysis_bioRxiv/"+bcaller+"/August_"+classifyr+".tsv" -->
-<!-- s = requests.get(url).content -->
-<!-- full3 = pd.read_csv(io.StringIO(s.decode('utf-8')), sep='\t', index_col=0, header=0) -->
-<!-- full3 = full3[~full3.index.duplicated(keep='first')] -->
-<!-- full3 = full3[full3.taxRank=='G']     -->
-<!-- full3.iloc[:,3:15].sum()  -->
-
-<!-- # choose samples >37k -->
-<!-- datacolumns_filt = ['1-April_genus.tsv', -->
-<!--  '1-August_genus.tsv', -->
-<!--  '1-June_genus.tsv', -->
-<!--  '2-April_genus.tsv', -->
-<!--  '2-August_genus.tsv', -->
-<!--  '3-April_genus.tsv', -->
-<!--  '4-April_genus.tsv', -->
-<!--  '4-August_genus.tsv', -->
-<!--  '5-April_genus.tsv', -->
-<!--  '5-August_genus.tsv', -->
-<!--  '6-August_genus.tsv', -->
-<!--  '6-June_genus.tsv', -->
-<!--  '7-April_genus.tsv', -->
-<!--  '8-April_genus.tsv', -->
-<!--  '9.1-August_genus.tsv', -->
-<!--  '9.2-August_genus.tsv', -->
-<!--  'Mock-April_genus.tsv', -->
-<!--  'Mock-August_genus.tsv', -->
-<!--  'Mock-June_genus.tsv', -->
-<!--  'N-August_genus.tsv'] -->
-
-<!-- posfilt = [np.where(np.array(datacolumns) == x)[0][0] for x in datacolumns_filt] -->
-
-<!-- # create four exemplar rarefaction dataframes for later comparison; we will mostly work with "final_1.tsv" -->
-<!-- for nr in ['1','2','3','4']: -->
-<!--     dataa = data.copy() -->
-<!--     dataa = dataa[nr] -->
-<!--     dataa = dataa.dropna(how='all') -->
-<!--     dataa = dataa.fillna(0) -->
-<!--     dataa = dataa.iloc[:,posfilt] -->
-<!--     dataa.columns = datacolumns_filt -->
-<!--     dataa.to_csv(outfolder+'Downsampling/genus/final_%s.tsv' %nr, sep='\t') -->
+# create four exemplar rarefaction dataframes for later comparison; we will mostly work with "final_1.tsv" available on github (see above)
+for nr in ['1','2','3','4']:
+  dataa = data.copy()
+  dataa = dataa[nr]
+  dataa = dataa.dropna(how='all')
+  dataa = dataa.fillna(0)
+  dataa = dataa.iloc[:,posfilt]
+  dataa.columns = datacolumns_filt
+  dataa.to_csv(outfolder+'Downsampling/genus/final_%s.tsv' %nr, sep='\t')
 ```
 
-### *Mantel test
-```{python}
+### Mantel test
+```{python, eval=FALSE}
+
+import skbio
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# load one downsampled file, here on genus level
+data = pd.read_csv('Downsampling/genus/final_1.tsv', sep='\t', index_col=0, header=0)
+
+# process downsampled data
+data = data.transpose()
+data['month'] = [x.split('-')[1].split('_')[0] for x in data.index]
+data['targetnice'] = [x.split('-')[0] for x in data.index]
+data['targetnice'][data['targetnice'] == 'Mock'] = 'P'
+data.index = pd.MultiIndex.from_arrays(data[['month', 'targetnice']].values.T, names=['month', 'location'])
+del data['month']; del data['targetnice']
+
+data = data.drop('N', level='location')
+data = data.drop('P', level='location')
+
+# load full genus (or family) minimap2 dataset available on github
+url = "https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/All_genus_minimap2.tsv"
+s = requests.get(url).content
+fullall = pd.read_csv(io.StringIO(s.decode('utf-8'))', sep='\t', index_col=[0,1], header=0)
+
+# process full data
+fullall = fullall.iloc[:, np.where(fullall.columns.isin(data.columns))[0]]
+fullall = fullall.loc[data.index.values]
+data = data[fullall.columns]
+
+# standadrise downscaled and full data
+data = pd.DataFrame(StandardScaler().fit_transform(data), index = data.index, columns = data.columns)
+fullall = pd.DataFrame(StandardScaler().fit_transform(fullall), index = fullall.index, columns = fullall.columns)
+
+# calculate distance
+datae = scipy.spatial.distance.cdist(data, data, metric='euclidean')
+fullalle = scipy.spatial.distance.cdist(fullall, fullall, metric='euclidean')
+
+# apply Mantel test to compare the distances of the full and downsampled data
+skbio.stats.distance.mantel(datae, fullalle, method='pearson', permutations=99999, alternative='two-sided', strict=True, lookup=None)
 
 ```
 
@@ -1374,7 +1468,7 @@ for (set in 1:4){
     # download and original downsampling files if nessesary
     if (dsampling == 0){
       # download downsampled datasets
-      infile_downsampling<-str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2/downsampled/final_",level,"_",set,".tsv") 
+      infile_downsampling<-str_c("https://raw.githubusercontent.com/d-j-k/puntseq/master/minimap2_classifications/rarefied_data/final_",level,"_",set,".tsv") 
       destfile_downsampling=str_c(outfolder,"Downsampling/",level,"/Downsampled_",level,"_set",set,"_",classifyr,".tsv")
       if(!file.exists(destfile_downsampling)){
         res <- tryCatch(download.file(infile_downsampling, destfile_downsampling, method="auto"), error=function(e) 1)
@@ -1402,7 +1496,7 @@ classified_reads_downsampled <- list(family.list, genus.list)
 
 ## Rawdata overview plots
 ### Pie charts of total reads per barcode for each MinION run
-```{r eval=FALSE}
+```{r}
 # Create output directory
 system(str_c("mkdir ",outfolder,"Overview-plots/"))
 
@@ -1452,7 +1546,7 @@ ggsave(str_c(outfolder,"Overview-plots/",date,"_total_reads_per_barcod_",classif
 ```
 
 ### Correlation analysis for DNA concentration and read numbers
-```{r eval=FALSE}
+```{r}
 # Load data  from metadata file into dataframe and prepare for plotting
 DNA.data.raw <- read_tsv(str_c(outfolder,"Metadata/Metadata_guppy_minimap2_table2.txt"))
 DNA.data <- DNA.data.raw %>%
@@ -1522,13 +1616,20 @@ tidy_classified_reads_april <- gather(classified_reads_april, key = "Location", 
   mutate(Classifyer = classifyr)
 
 # calculate percentage
-total_read_number_april <- 
-  hash(keys=colnames(classified_reads_april[2:13]),
-  values=colSums(classified_reads_april[2:13]))
+total_read_number_april_family <- 
+  hash(keys=colnames(classified_reads_april_family[2:13]),
+  values=colSums(classified_reads_april_family[2:13]))
+total_read_number_april_genus <- 
+  hash(keys=colnames(classified_reads_april_genus[2:13]),
+  values=colSums(classified_reads_april_genus[2:13]))
 
 for (i in 1:nrow(tidy_classified_reads_april)){
-    tidy_classified_reads_april$Percentage[i] <- tidy_classified_reads_april$Reads[i]/total_read_number_april [[tidy_classified_reads_april$Location[i]]]*100
-  }
+  if(tidy_classified_reads_april$TaxRank[i] == "F"){
+    tidy_classified_reads_april$Percentage[i] <- tidy_classified_reads_april$Reads[i]/total_read_number_april_family [[tidy_classified_reads_april$Location[i]]]*100
+  } else {
+    tidy_classified_reads_april$Percentage[i] <- tidy_classified_reads_april$Reads[i]/total_read_number_april_genus [[tidy_classified_reads_april$Location[i]]]*100
+  } 
+} 
 
 # clean and order dataset
 clean_classified_reads_april <- select(tidy_classified_reads_april, Name, TaxRank, Location, Time, Classifyer, Reads, Percentage) %>%
@@ -1558,13 +1659,20 @@ tidy_classified_reads_june <- gather(classified_reads_june, key = "Location", va
   mutate(Classifyer = classifyr)
 
 # calculate percentage
-total_read_number_june <- 
-  hash(keys=colnames(classified_reads_june[2:13]),
-  values=colSums(classified_reads_june[2:13]))
+total_read_number_june_family <- 
+  hash(keys=colnames(classified_reads_june_family[2:13]),
+  values=colSums(classified_reads_june_family[2:13]))
+total_read_number_june_genus <- 
+  hash(keys=colnames(classified_reads_june_genus[2:13]),
+  values=colSums(classified_reads_june_genus[2:13]))
 
 for (i in 1:nrow(tidy_classified_reads_june)){
-    tidy_classified_reads_june$Percentage[i] <- tidy_classified_reads_june$Reads[i]/total_read_number_june [[tidy_classified_reads_june$Location[i]]]*100
-  }
+  if(tidy_classified_reads_june$TaxRank[i] == "F"){
+    tidy_classified_reads_june$Percentage[i] <- tidy_classified_reads_june$Reads[i]/total_read_number_june_family [[tidy_classified_reads_june$Location[i]]]*100
+  } else {
+    tidy_classified_reads_june$Percentage[i] <- tidy_classified_reads_june$Reads[i]/total_read_number_june_genus [[tidy_classified_reads_june$Location[i]]]*100
+  } 
+} 
 
 # clean and order dataset
 clean_classified_reads_june <- select(tidy_classified_reads_june, Name, TaxRank, Location, Time, Classifyer, Reads, Percentage) %>%
@@ -1593,13 +1701,20 @@ tidy_classified_reads_august <- gather(classified_reads_august, key = "Location"
   mutate(Classifyer = classifyr)
 
 # calculate percentage
-total_read_number_august <- 
-  hash(keys=colnames(classified_reads_august[2:13]),
-  values=colSums(classified_reads_august[2:13]))
+total_read_number_august_family <- 
+  hash(keys=colnames(classified_reads_august_family[2:13]),
+  values=colSums(classified_reads_august_family[2:13]))
+total_read_number_august_genus <- 
+  hash(keys=colnames(classified_reads_august_genus[2:13]),
+  values=colSums(classified_reads_august_genus[2:13]))
 
 for (i in 1:nrow(tidy_classified_reads_august)){
-    tidy_classified_reads_august$Percentage[i] <- tidy_classified_reads_august$Reads[i]/total_read_number_august [[tidy_classified_reads_august$Location[i]]]*100
-  }
+  if(tidy_classified_reads_august$TaxRank[i] == "F"){
+    tidy_classified_reads_august$Percentage[i] <- tidy_classified_reads_august$Reads[i]/total_read_number_august_family [[tidy_classified_reads_august$Location[i]]]*100
+  } else {
+    tidy_classified_reads_august$Percentage[i] <- tidy_classified_reads_august$Reads[i]/total_read_number_august_genus [[tidy_classified_reads_august$Location[i]]]*100
+  } 
+} 
 
 # clean and order dataset
 clean_classified_reads_august <- select(tidy_classified_reads_august, Name, TaxRank, Location, Time, Classifyer, Reads, Percentage) %>%
@@ -1665,7 +1780,7 @@ for (set in 1:4){
 ## Plotting data
 ### Reads per location/time point
 Next, the distribution of reads per location/time point is displayed in a barchart.
-```{r eval=FALSE}
+```{r}
 # Create output directory
 system(str_c("mkdir ",outfolder,"Overview-plots/"))
 
@@ -1692,7 +1807,7 @@ ggsave(str_c(outfolder,"Overview-plots/",date,"_Number-of-reads-per-location-tim
 
 ### Number of classified/unclassified reads per location/time point
 Next, the distribution of classified/unclassified reads per location/time point is displayed.
-```{r eval=FALSE}
+```{r}
 # create a subset of the dataframe for plotting
 subset2<- filter(clean_classified_reads, Name == "root" | Name == "unclassified") %>%
   mutate( Name = str_replace(Name, pattern = "root", "classified")) %>%
@@ -1757,7 +1872,7 @@ ggsave(str_c(outfolder,"Overview-plots/",date,"_Percentage-of-classified-unclass
 
 ### Number of classified reads per taxonomic level (Supplementary Figure)
 The number of reads classified onto the different taxonomic levels was displayed using the followiung code:
-```{r eval=FALSE}
+```{r}
 # Filtering and adjutsing data for plotting
 subset3_1 <- filter(clean_classified_reads) %>% 
   mutate(TaxRank = as.character(TaxRank)) %>%
@@ -1826,7 +1941,7 @@ for (setting in c("samples","samples+controls")){
 ### Relative abundance: Representation on the different taxonomic levels
 The relative species abundance on the different taxonomic levels was visualised using the following lines of code. 
 #### Full dataset
-```{r eval=FALSE}
+```{r}
 # create output directory
 system(str_c("mkdir ",outfolder,"Relatve_abundance"))
 system(str_c("mkdir ",outfolder,"Relatve_abundance/Full-dataset/"))
@@ -1970,7 +2085,7 @@ for (setting in c("samples","samples+controls")){
        subset_tmp <- subset_rank_1 %>%
         group_by(Name) %>%
         summarize(Sum = sum(Percentage)) %>%
-        ungroup(Name) %>%
+        ungroup() %>%
         arrange(desc(Sum))
       legend <- subset_tmp$Name %>%
         unique()
@@ -2038,7 +2153,7 @@ for (setting in c("samples","samples+controls")){
 ```
 
 #### Downsampled data
-```{r eval=FALSE}
+```{r}
 # create general output directories
 system(str_c("mkdir ",outfolder,"Relatve_abundance"))
 system(str_c("mkdir ",outfolder,"Relatve_abundance/Downsampled-dataset/"))
@@ -2193,7 +2308,7 @@ for (set in 1:4){
       subset_tmp <- subset_rank_1 %>%
         group_by(Name) %>%
         summarize(Sum = sum(Percentage)) %>%
-        ungroup(Name) %>%
+        ungroup() %>%
         arrange(desc(Sum))
       legend <- subset_tmp$Name %>%
         unique()
@@ -2329,10 +2444,10 @@ for (set in 1:4){
   }
 }
 ```
-#### Extra: Main Figure (Overlay of Relative abundance plots from Downsampled data with full dataset)
+#### Extra: Main Figure 
+Overlay of Relative abundance plots from Downsampled data with full dataset.
+Plot relativ abundance (Version 4) of the top 10 most abundant taxa with the highest total abundance (percentage) among all downsampled samples (set1) and add corresponding abundances for samples with <37,000 but >1,000 reads from the full dataset
 ```{r}
-# plot relativ abundance (Version 4) of the top 10 most abundant taxa with the highest total abundance (percentage) among all downsampled samples (set1) and add corresponding abundances for samples with <37,000 but >1,000 reads from the full dataset
-
 # load legend of top 10 most abundant
 legend <- read_tsv(str_c(outfolder,"Relatve_abundance/Downsampled-dataset/family/Set1/Top10-highest-total-abundance/",date,"_legend_5_family_",classifyr,"_samples_V3.txt"), col_names = FALSE)
 legend <- legend$X1
@@ -2381,10 +2496,8 @@ subset_all <- rbind(subset_downsampling, subset_full_2) %>%
       ggsave(str_c(outfolder,"Relatve_abundance/Downsampled-dataset/family/Set1/Top10-highest-total-abundance/",date,"_Relative-abundance-plot_Individual-Most-abundant_level-adjusted_Main_fig_5_family_",classifyr,"_samples_V4.png"), width = 60, height = 15, units = "cm")
 ```
 
-
 ### Clustering & visualisation as heatmap 
-you just apply log10 at the moment, right? I would (afterwards) standardize the features by removing the mean and scaling to unit variance to give each bacteria the same "chance" of showing outliers - does that make sense?) 
-```{r eval=FALSE}
+```{r}
 
 # create output directory
 system(str_c("mkdir ",outfolder,"Heatmap"))
@@ -2434,93 +2547,103 @@ for (set in 1:4){
     
     # make plots for all samples as well as samples+controls
     for (setting in c("samples","samples+controls")){
-      if (setting == "samples"){
-        heatmap_1 <- heatmap[,1:(ncol(heatmap)-4)]
-      } else {
-        heatmap_1 <- heatmap[,1:(ncol(heatmap)-1)]
-      }
-      
-      # prepare annotations for histogram
-      gAnnotationData <- colnames(heatmap_1)
-      gAnnotationData <- tibble(gAnnotationData, .name_repair = ~ c("Name"))
-      gAnnotationData$Location <- gAnnotationData$Name
-      gAnnotationData <- gAnnotationData %>%
-        separate(Location, into = c("Location","Time"), sep="-")
-      gAnnotationData$Location <- trimws(gAnnotationData$Location)
-      gAnnotationData$Time<- trimws(gAnnotationData$Time)
-      
-      gAnnotationData1 <- select(gAnnotationData, Location)%>%
-        mutate(Location = str_replace(Location, pattern = "9.1", "9")) %>%
-        mutate(Location = str_replace(Location, pattern = "9.2", "9"))
-      gAnnotationData1$Location <- as_factor(gAnnotationData1$Location)
-      gAnnotationData1<-as.data.frame(gAnnotationData1)
-      row.names(gAnnotationData1) <- colnames(heatmap_1)
-      
-      gAnnotationData2 <- select(gAnnotationData, Location, Time)%>%
-        mutate(Location = str_replace(Location, pattern = "9.1", "9")) %>%
-        mutate(Location = str_replace(Location, pattern = "9.2", "9"))
-      gAnnotationData1$Location <- as_factor(gAnnotationData1$Location)
-      gAnnotationData2$Time <- as_factor(gAnnotationData2$Time)
-      gAnnotationData2<-as.data.frame(gAnnotationData2)
-      row.names(gAnnotationData2) <- colnames(heatmap_1)
-      
-      # define colors
-      my_colour = list(
-        Location = c("1" = "#2157A4", "2" = "#3694D1", "3" = "#65C6E8", "4" = "#9DD7ED", "5" = "#D6DE4F", "6" = "#FDCB44", "7" = "#F1861E", "8" = "#E63A11", "9" = "#a50026", "Mock" = "#636363", "N" = "#f0f0f0"),
-        Time = c("April" = "#66c2a5", "June" = "#fc8d62", "August" = "#8da0cb"),
-        Cluster = c("C1" = "#bdbdbd", "C2" = "#969696", "C3" = "#737373", "C4" = "#525252"))
-      
-       # perform hirachical clustering and devide taxa into 4 cluster
-      my_hclust_gene <- hclust(dist(heatmap_1), method = "complete")
-      as.dendrogram(my_hclust_gene) %>%
-        plot(horiz = TRUE)
-      my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4)
-      my_gene_col <- data.frame(Cluster = ifelse(test = my_gene_col == 1, yes = "C1", no = ifelse(test = my_gene_col == 2, yes = "C2", no= ifelse(test = my_gene_col == 3, yes = "C3", no = "C4"))))
-      
-      # plot heatmap
-      my_heatmap <- pheatmap(heatmap_1, 
-        clustering_distance_cols = "correlation",
-        #clustering_distance_rows = "correlation",
-        color = colorRampPalette(brewer.pal(n = 7, name = "Greens"))(100),
-        show_rownames = FALSE, show_colnames = FALSE,
-        annotation_row = my_gene_col,
-        annotation_col = gAnnotationData2,
-        annotation_colors = my_colour,
-        cutree_rows = 4,
-        cutree_cols = 2)
-      
-      # define function to save heatmap in .png format
-      save_pheatmap_png <- function(x, filename, width=2000, height=2000, res = 300) {
-        png(filename, width = width, height = height, res = res)
-        grid::grid.newpage()
-        grid::grid.draw(x$gtable)
-        dev.off()
-      }
-      
-      # define function to save heatmap in .pdf format
-      save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
-        stopifnot(!missing(x))
-        stopifnot(!missing(filename))
-        pdf(filename, width=width, height=height)
-        grid::grid.newpage()
-        grid::grid.draw(x$gtable)
-        dev.off()
-      }
-      
-      # save heatmap in both .png & .pdf file format
-      save_pheatmap_png(my_heatmap, str_c(outfolder,"Heatmap/Downsampled-dataset/Set",set,"/",date,"_heatmap_downsampled_set-",set,"_",rank,"-level_",setting,".png"))
-      save_pheatmap_pdf(my_heatmap, str_c(outfolder,"Heatmap/Downsampled-dataset/Set",set,"/",date,"_heatmap_downsampled_set-",set,"_",rank,"-level_",setting,".pdf"))
-      
-      # save cluster mapping
-      cluster.mapping <- rownames_to_column(my_gene_col, var = "Name")
-      save(cluster.mapping ,file = file.path(str_c(outfolder,"Heatmap/Downsampled-dataset/Set",set,"/",date,"_cluster-mapping_downsampled_set-",set,"_",rank,"-level_",setting,".RData")))
+      if (rank == "family"){
+        if (setting == "samples"){
+          heatmap_1 <- heatmap[,1:(ncol(heatmap)-4)]
+        } else {
+          heatmap_1 <- heatmap[,1:(ncol(heatmap)-1)]
+        }
+      }   
+      if (rank == "genus"){
+        if (setting == "samples" ){
+            heatmap_1 <- heatmap[,1:(ncol(heatmap)-3)]
+        } else {
+          heatmap_1 <- heatmap[,1:(ncol(heatmap))]
+        }
+      }   
     }
-  }    
-} 
+        
+    # prepare annotations for histogram
+    gAnnotationData <- colnames(heatmap_1)
+    gAnnotationData <- tibble(gAnnotationData, .name_repair = ~ c("Name"))
+    gAnnotationData$Location <- gAnnotationData$Name
+    gAnnotationData <- gAnnotationData %>%
+      separate(Location, into = c("Location","Time"), sep="-")
+    gAnnotationData$Location <- trimws(gAnnotationData$Location)
+    gAnnotationData$Time<- trimws(gAnnotationData$Time)
+    
+    gAnnotationData1 <- select(gAnnotationData, Location)%>%
+      mutate(Location = str_replace(Location, pattern = "9.1", "9")) %>%
+      mutate(Location = str_replace(Location, pattern = "9.2", "9"))
+    gAnnotationData1$Location <- as_factor(gAnnotationData1$Location)
+    gAnnotationData1<-as.data.frame(gAnnotationData1)
+    row.names(gAnnotationData1) <- colnames(heatmap_1)
+    
+    gAnnotationData2 <- select(gAnnotationData, Location, Time)%>%
+      mutate(Location = str_replace(Location, pattern = "9.1", "9")) %>%
+      mutate(Location = str_replace(Location, pattern = "9.2", "9"))
+    gAnnotationData1$Location <- as_factor(gAnnotationData1$Location)
+    gAnnotationData2$Time <- as_factor(gAnnotationData2$Time)
+    gAnnotationData2<-as.data.frame(gAnnotationData2)
+    row.names(gAnnotationData2) <- colnames(heatmap_1)
+    
+    # define colors
+    my_colour = list(
+      Location = c("1" = "#2157A4", "2" = "#3694D1", "3" = "#65C6E8", "4" = "#9DD7ED", "5" = "#D6DE4F", "6" = "#FDCB44", "7" = "#F1861E", "8" = "#E63A11", "9" = "#a50026", "Mock" = "#636363", "N" = "#f0f0f0"),
+      Time = c("April" = "#66c2a5", "June" = "#fc8d62", "August" = "#8da0cb"),
+      Cluster = c("C1" = "#bdbdbd", "C2" = "#969696", "C3" = "#737373", "C4" = "#525252"))
+    
+     # perform hirachical clustering and devide taxa into 4 cluster
+    my_hclust_gene <- hclust(dist(heatmap_1), method = "complete")
+    as.dendrogram(my_hclust_gene) %>%
+      plot(horiz = TRUE)
+    my_gene_col <- cutree(tree = as.dendrogram(my_hclust_gene), k = 4)
+    my_gene_col <- data.frame(Cluster = ifelse(test = my_gene_col == 1, yes = "C1", no = ifelse(test = my_gene_col == 2, yes = "C2", no= ifelse(test = my_gene_col == 3, yes = "C3", no = "C4"))))
+    
+    # plot heatmap
+    my_heatmap <- pheatmap(heatmap_1, 
+      clustering_distance_cols = "correlation",
+      #clustering_distance_rows = "correlation",
+      color = colorRampPalette(brewer.pal(n = 7, name = "Greens"))(100),
+      show_rownames = FALSE, show_colnames = FALSE,
+      annotation_row = my_gene_col,
+      annotation_col = gAnnotationData2,
+      annotation_colors = my_colour,
+      cutree_rows = 4,
+      cutree_cols = 2)
+    
+    # define function to save heatmap in .png format
+    save_pheatmap_png <- function(x, filename, width=2000, height=2000, res = 300) {
+      png(filename, width = width, height = height, res = res)
+      grid::grid.newpage()
+      grid::grid.draw(x$gtable)
+      dev.off()
+    }
+    
+    # define function to save heatmap in .pdf format
+    save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
+      stopifnot(!missing(x))
+      stopifnot(!missing(filename))
+      pdf(filename, width=width, height=height)
+      grid::grid.newpage()
+      grid::grid.draw(x$gtable)
+      dev.off()
+    }
+    
+    # save heatmap in both .png & .pdf file format
+    save_pheatmap_png(my_heatmap, str_c(outfolder,"Heatmap/Downsampled-dataset/Set",set,"/",date,"_heatmap_downsampled_set-",set,"_",rank,"-level_",setting,".png"))
+    save_pheatmap_pdf(my_heatmap, str_c(outfolder,"Heatmap/Downsampled-dataset/Set",set,"/",date,"_heatmap_downsampled_set-",set,"_",rank,"-level_",setting,".pdf"))
+      
+    # save cluster mapping
+    cluster.mapping <- rownames_to_column(my_gene_col, var = "Name")
+    save(cluster.mapping ,file = file.path(str_c(outfolder,"Heatmap/Downsampled-dataset/Set",set,"/",date,"_cluster-mapping_downsampled_set-",set,"_",rank,"-level_",setting,".RData")))
+  }
+}    
+ 
 ```
 
 ### Core microbiome
-```{r eval=FALSE}
+```{r}
 # create output directory
 system(str_c("mkdir ",outfolder,"Core_microbiome"))
 
@@ -2529,9 +2652,11 @@ for (rank in c("family","genus")) {
   if (rank == "family"){
     i <- 1
     Rank <- "F"
+    threshold <- 0.1
   } else {
     i <- 2
     Rank <- "G"
+    threshold <- 0.1
   }
 
   # loop over all 4 downsampling datasets
@@ -2558,20 +2683,26 @@ for (rank in c("family","genus")) {
     mutate(Median = median(Percentage)) %>%
     ungroup(Name) %>%
     arrange(desc(Median)) %>%
-    filter(Median > 0.1)
+    filter(Median >= threshold)
   
   # add clutster information from histogram of set 1
   load(file.path(str_c(outfolder,"Heatmap/Downsampled-dataset/Set1/",date,"_cluster-mapping_downsampled_set-1_",rank,"-level_samples+controls.RData")))
   core.microbiome <- left_join(core.microbiome, cluster.mapping)
-  core.microbiome <- transform(core.microbiome, Cluster = factor(Cluster, levels = c("C4","C2","C3","C1"))) %>%
-    transform(core.microbiome, Time = factor(Time, levels = c("April","June","August"))) 
   
   # plot either all or only core clusters
   for (setting in c("all.clusters","core.clusters")){
     if (setting == "core.clusters"){
-      core.microbiome <- filter(core.microbiome, Cluster != "C1" & Cluster != "C3") 
+      if (rank == "family"){
+        core.microbiome <- filter(core.microbiome, Cluster != "C1" & Cluster != "C3") 
+      }
+      if (rank == "genus"){
+        core.microbiome <- filter(core.microbiome, Cluster != "C1" & Cluster != "C4") 
+      }
     }
-  
+    
+    # correct levels 
+    core.microbiome <- transform(core.microbiome, Cluster = factor(Cluster, levels = c("C4","C3","C2","C1")), Time = factor(Time, levels = c("April","June","August"))) 
+    
     # make boxplot
     ggplot(core.microbiome,aes(x=reorder(Name, Percentage, FUN = median),y=Percentage)) +
       geom_boxplot(color = "black",fill="grey",show.legend = FALSE) +
@@ -2591,7 +2722,7 @@ for (rank in c("family","genus")) {
       geom_violin(trim=FALSE, fill="gray")+
       facet_grid(cols = vars(Time),rows = vars(Cluster), scales = "free_y",space = "free_y")+ 
       scale_y_continuous(limits = c(0.01,100),name ="Percentage", trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-      geom_hline(yintercept=0.1, linetype="dashed", color = "black")+
+      geom_hline(yintercept=threshold, linetype="dashed", color = "black")+
       coord_flip()+
       theme_bw()+
       theme(panel.grid.minor = element_blank())+
@@ -2605,7 +2736,7 @@ for (rank in c("family","genus")) {
 ```
 
 # Part 3: Differential taxa analysis 
-## *PCA analysis on the downsampled date
+## PCA analysis on the downsampled date
 ```{python, eval=FALSE}
 use_condaenv("PuntSeq-analysis-env")
 
@@ -2622,6 +2753,8 @@ from sklearn.decomposition import PCA
 DATE = datetime.datetime.now().strftime('%Y-%m-%d')
 outfolder = DATE + '_PuntSeq_Metagenomics-analysis/'
 os.mkdir(outfolder+'PCA/')
+# create folder for metagenomeSeq follow-up
+os.mkdir(outfolder+'metagenomeSeq/')
 
 def confidence_ellipse(x, y, ax, n_std=2.0, facecolor='none', alpha=0.5, **kwargs):
     """
@@ -2721,6 +2854,7 @@ del x['N-August_genus.tsv']
 del x['Mock-April_genus.tsv']; del x['Mock-August_genus.tsv']; del x['Mock-June_genus.tsv']
 
 datacolumns = x.columns
+dataindex = x.index
 
 # transpose to have the features in the column of the dataframe
 x = x.transpose()
@@ -2732,6 +2866,9 @@ x = StandardScaler().fit_transform(x)
 
 x2 = np.log10(x2 + 1)
 x2 = StandardScaler().fit_transform(x2)
+
+# save matrix for follow-up metagenomeSeq analysis
+pd.DataFrame(x, index = datacolumns, columns = dataindex).transpose().to_csv('metagenomeSeq/fitfeature.tsv', sep='\t')
 
 # define a PCA with 10 components and 
 pca = PCA(n_components=10)
@@ -2808,6 +2945,17 @@ ax.xaxis.set_ticks_position('bottom')
 
 
 fig.savefig(outfolder+'PCA/PCA_%i_%i.pdf' %(pc1,pc2), bbox_inches='tight')
+
+
+### 
+scipy.stats.kruskal(df['PC 3'].loc['April'],df['PC 3'].loc['August'],
+  df['PC 3'].loc['June'])
+scipy.stats.mannwhitneyu(df['PC 3'].loc['June'],df['PC 3'].loc['April'],
+  alternative = 'two-sided')
+  scipy.stats.mannwhitneyu(df['PC 3'].loc['June'],df['PC 3'].loc['August'],
+  alternative = 'two-sided')
+  scipy.stats.mannwhitneyu(df['PC 3'].loc['August'],df['PC 3'].loc['April'],
+  alternative = 'two-sided')
 
 
 ### examine the contributions of bacteria to the PCs
@@ -3001,8 +3149,55 @@ fig.savefig(outfolder+'PCA/PCA_ionics_contributions_%s.pdf' %pc_c, bbox_inches='
 
 ```
 
-## Potentially waterborne pathogens and genera associated with wasterwater
+## Apply metagenomeSeq for seasonal divergence analysis
 ```{r eval=FALSE}
+# install metagenome Seq package
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("metagenomeSeq")
+
+# load library
+library(metagenomeSeq)
+
+# load data that was created during PCA analysis
+x = read.table('metagenomeSeq/fitfeature.tsv', sep='\t', header = TRUE, row.names = 1)
+ph = c('April', 'August', 'June', 'April',
+       'August', 'April', 'April', 'August', 'April',
+       'August', 'August', 'June', 'April', 'April',
+       'August', 'August')
+phenoData=AnnotatedDataFrame(data.frame(ph, row.names = colnames(x)))
+
+# Group June and August samples to compare spring versus summer months:
+# rename June to August samples
+ph = c('April', 'August', 'August', 'April',
+       'August', 'April', 'April', 'August', 'April',
+       'August', 'August', 'August', 'April', 'April',
+       'August', 'August')
+phenoData=AnnotatedDataFrame(data.frame(ph, row.names = colnames(x)))
+
+# define new metagenomeSeq experiment
+obj = newMRexperiment(as.matrix(x), phenoData = phenoData) 
+
+pd <- pData(obj)
+
+# define model
+mod <- model.matrix(~1 + ph, data = pd)
+
+# calculates the percentile for which to sum counts up to and scale by
+p = cumNormStatFast(obj, rel=0.1)
+obj = cumNorm(obj, p = p)
+
+# fitfeature model
+res1 = fitFeatureModel(obj, mod)
+head(MRcoefs(res1))
+
+# assess nominally significant bacterial families
+MRcoefs(res1)[rownames(MRcoefs(res1)[MRcoefs(res1)$pvalues < 0.05,]),]
+
+```
+
+## Potentially waterborne pathogens and genera associated with wasterwater
+```{r}
 # create output directory
 system(str_c("mkdir ",outfolder,"Interesting_taxa"))
 
@@ -3250,7 +3445,7 @@ pot.pathogens.rel.abundance <- select(interesting.taxa.final.list, Location, Rea
   filter(Wastewater_only == "N") %>%
   group_by(Location) %>%
   summarize(Sum = sum(Reads, na.rm = TRUE)) %>%
-  ungroup(Location) %>%
+  ungroup() %>%
   mutate(rel_abundance = (Sum/37000)*100)
 
 # plot relativ abundance mapping to genera harboring pot. pathogeneic bacteria
@@ -3268,275 +3463,27 @@ ggsave(str_c(outfolder,"Interesting_taxa/",date,"relativ_abundance_map.pdf"), wi
 
 ```
 
-## tests
-```{r}
-set<-1
-# Prepare data for annotation 
-  selection <- filter(clean_classified_reads_downsampled[[set]], TaxRank == "G", Percentage != "NA", Location != "N" & Location != "Mock") %>%
-    unite("ID", c("Location","Time"), sep = " - ") %>%
-    filter(Name == "Dechloromonas")
-  
-
-ggplot(data = selection, mapping = aes(x = ID, y = Percentage))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)#+
-  facet_grid(cols = vars(Location))+ 
-  geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Reads (1)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#bdbdbd","#d9d9d9","#56B4E9","#ccebc5")
-                    
-```
-
-
 
 # Part 4: Additional analyses
-### Correlation analysis classifier
+## Hydrochemistry plots
 ```{r eval=FALSE}
-# # Load data into dataframe
-# correlation.data.raw <- read_tsv("summary_pos_cor.tsv")
-# correlation.data <- correlation.data.raw %>%
-#   gather(key = "Set", value = "Observed_composition", 4:51) %>%
-#   mutate(Observed_composition = Observed_composition *100) %>%
-#   separate(Set, into = c("Basecaller","Classifier","Time"), sep="_") %>%
-#   separate(Classifier, into = c("Classifier","Database"), sep="16") %>%
-#   mutate(Database = ifelse(grepl("S", Database), "SILVA", "NCBI")) %>%
-#   mutate(Classifier = str_replace(Classifier, pattern = "bracken", "Bracken")) %>%
-#   mutate(Classifier = str_replace(Classifier, pattern = "kraken", "Kraken")) %>%
-#   mutate(Classifier = str_replace(Classifier, pattern = "centrifuge", "Centrifuge")) %>%
-#   unite("ID", c("Classifier","Database"), sep = " ") %>%
-#   filter(X1 != "R" & X1 != "P")
-# 
-# # Correlation between DNA yield and PCR yield
-# ggscatter(correlation.data , x = "Expected_composition", y = "Observed_composition",
-#           add = "reg.line",                         # Add regression line: loss = local regression fitting; reg.line = liniear regression         
-#           # conf.int = TRUE,                        # Add confidence interval
-#           color = "Time", palette = "grey",size = 2,          # Color by groups "cyl"
-#           # shape = "Experiment",                             # Change point shape by groups "cyl"
-#           facet.by = c("Basecaller","ID"),
-#           # yscale = "log10",
-#           # add.params = list(color = "blue", fill = "lightgray"), # Customize reg. line
-#           xticks.by = 10,
-#           yticks.by = 10,
-#           xlim = c(0, 60),
-#           ylim = c(0, 60)
-#           )+
-#   labs(title = "", caption = waiver(), x="expected ratio of taxa [%]", y="observed ratio of taxa [%]")+
-#   theme(legend.position="right")+
-#   stat_cor(label.x = 2,label.y = 45, size = 4, method = "pearson", col="black")           # Add correlation coefficient
-# 
-# ggsave(str_c(outfolder,"Overview-plots/",date,"_Correlation_plots.png"), width = 40, height = 15, units = "cm")
-# ggsave(str_c(outfolder,"Overview-plots/",date,"_Correlation_plots.pdf"), width = 40, height = 15, units = "cm") 
-# 
-#   # geom_point(aes(color=Time))+
-#   # scale_color_grey()+
-#   # 
-#   # geom_smooth(se = TRUE, method = "lm", formula = y ~ x, color = "black")+
-#   # 
-#   # 
 
-```
-
-### (Please check warnings) Correlation analysis classifier (genus level; 'Loman' equals the shotgun mock community as described in the manuscript)
-```{python, eval=FALSE}
-<!-- import os -->
-<!-- import pandas as pd  -->
-<!-- import numpy as np -->
-<!-- import datetime -->
-<!-- import matplotlib.pyplot as plt -->
-<!-- from sklearn.linear_model import LinearRegression -->
-<!-- import requests -->
-<!-- import io -->
-<!-- import scipy -->
-<!-- import pylab -->
-
-<!-- DATE = datetime.datetime.now().strftime('%Y-%m-%d') -->
-<!-- outfolder = DATE + '_PuntSeq_Metagenomics-analysis/' -->
-<!-- os.mkdir(outfolder+'positive_control/') -->
-
-<!-- for basecaller in ['Albacore','Guppy']: -->
-<!--     for classi in ['kraken16S','centrifuge', 'centrifuge16S', 'kraken', 'bracken', 'kraken16S', 'bracken16S']: -->
-<!--         for month in ['April','June', 'August', 'Loman']: -->
-<!--             if classi == 'kraken16S': -->
-<!--                 classi2 = 'Kraken2 SILVA' -->
-<!--             if classi == 'kraken': -->
-<!--                 classi2 = 'Kraken2 NCBI' -->
-<!--             if classi == 'bracken16S': -->
-<!--                 classi2 = 'Bracken SILVA' -->
-<!--             if classi == 'bracken': -->
-<!--                 classi2 = 'Bracken NCBI' -->
-<!--             if classi == 'centrifuge16S': -->
-<!--                 classi2 = 'Cenrifuge SILVA' -->
-<!--             if classi == 'centrifuge': -->
-<!--                 classi2 = 'Cenrifuge NCBI' -->
-
-<!--             taxrank = 'G' # 'U', '-', 'D', 'P', 'C', 'O', 'F', 'G', 'S' -->
-<!--             taxrank2 = 'genus' -->
-
-<!--             url = "https://raw.githubusercontent.com/d-j-k/puntseq/master/analysis/data/Analysis_bioRxiv/"+basecaller+"/"+month+"_"+classi+".tsv" -->
-<!--             s = requests.get(url).content -->
-<!--             april = pd.read_csv(io.StringIO(s.decode('utf-8')), sep='\t', index_col=0, header=0) -->
-
-<!--             if month == 'Loman': -->
-<!--                 new = april.columns.values -->
-<!--                 new[3] = 'BC08_abs' -->
-<!--                 april.columns = new -->
-<!--             else:  -->
-<!--                 april.columns = [x.split('.')[0] for x in april.columns] -->
-<!--                 april.columns = [x.split('_')[-1] for x in april.columns] -->
-<!--                 april.columns.values[3:15] = [x + '_abs' for x in april.columns[3:15]] -->
-
-<!--             # get one taxonomic level:  -->
-<!--             aprilg = april[april.taxRank==taxrank] -->
-
-<!--             ### choose positive control -->
-<!--             aprilg8 = aprilg['BC08_abs'] -->
-
-<!--             genera = np.array(['Pseudomonas', 'Escherichia', 'Salmonella', 'Lactobacillus', 'Enterococcus', 'Staphylococcus', 'Listeria', 'Bacillus']) -->
-<!--             if classi[-3:] == '16S': -->
-<!--                 genera = np.array(['Pseudomonas', 'Escherichia-Shigella', 'Salmonella', 'Lactobacillus', 'Enterococcus', 'Staphylococcus', 'Listeria', 'Bacillus']) -->
-<!--             ## if family or order: -->
-<!--             #genera = np.array(['Pseudomonadaceae', 'Enterobacteriaceae', 'Lactobacillaceae', 'Enterococcaceae', 'Staphylococcaceae', 'Listeriaceae', 'Bacillaceae']) -->
-<!--             #genera = np.array(['Pseudomonadales', 'Enterobacterales', 'Lactobacillales', 'Bacillales']) -->
-<!--             #if classi[-3:] == '16S': -->
-<!--                 #genera = np.array(['Pseudomonadales', 'Enterobacteriales', 'Lactobacillales', 'Bacillales']) -->
-
-<!--             # allocate expected 16S ratio (from Zymobiomics protocol) -->
-<!--             generaexp = np.array([4.2, 10.1, 10.4, 18.4, 9.9, 15.5, 14.1, 17.4]) -->
-<!--             ## if family or order: -->
-<!--             #generaexp = np.array([4.2, 10.1+10.4, 18.4, 9.9, 15.5, 14.1, 17.4]) -->
-<!--             #generaexp = np.array([4.2, 10.1+10.4, 18.4+9.9, 15.5+14.1+17.4]) -->
-
-<!--             # allocate expected shotgun ratio (from Zymobiomics protocol) -->
-<!--             if month == 'Loman': -->
-<!--                 generaexp = np.array([6.1, 8.5, 8.7, 21.6, 14.6, 15.2, 13.9, 10.3]) -->
-<!--                 ## if family or order: -->
-<!--                 #generaexp = np.array([6.1, 8.5+8.7, 21.6, 14.6, 15.2, 13.9, 10.3]) -->
-<!--                 #generaexp = np.array([6.1, 8.5+8.7, 21.6+14.6, 15.2+13.9+10.3]) -->
-
-
-<!--             generaabs = aprilg8.loc[genera].values/aprilg8.sum() -->
-<!--             generaabs[np.isnan(generaabs)] = 0 -->
-
-<!--             # values without Ecoli (to calculate correlations) [nr might chance on different taxonomic level] -->
-<!--             generae = np.delete(genera, 1) -->
-<!--             generaexpe = np.delete(generaexp, 1) -->
-<!--             generaabse = np.delete(generaabs, 1) -->
-
-<!--             # assign values per month -->
-<!--             if month == 'April': -->
-<!--                 gaA = generaabs.copy() -->
-<!--                 geA = generaexp.copy() -->
-<!--                 gaAe = generaabse.copy() -->
-<!--                 geAe = generaexpe.copy() -->
-<!--             if month == 'June': -->
-<!--                 gaJ = generaabs.copy() -->
-<!--                 geJ = generaexp.copy() -->
-<!--                 gaJe = generaabse.copy() -->
-<!--                 geJe = generaexpe.copy() -->
-<!--             if month == 'August': -->
-<!--                 gaAU = generaabs.copy() -->
-<!--                 geAU = generaexp.copy() -->
-<!--                 gaAUe = generaabse.copy() -->
-<!--                 geAUe = generaexpe.copy() -->
-<!--             if month == 'Loman': -->
-<!--                 gaL = generaabs.copy() -->
-<!--                 geL = generaexp.copy() -->
-<!--                 gaLe = generaabse.copy() -->
-<!--                 geLe = generaexpe.copy() -->
-
-
-
-<!--         # plot -->
-<!--         plt.style.use('classic') -->
-
-
-<!--         fig, ax = plt.subplots(figsize=(8, 8), facecolor='white') -->
-
-<!--         maxaxis = 70 -->
-<!--         plt.xlim(-1, maxaxis) -->
-<!--         plt.ylim(-1, maxaxis) -->
-
-
-<!--         # linear regression without E.coli -->
-<!--         modele = LinearRegression(fit_intercept=True) -->
-<!--         modele.fit(geAe.reshape(-1, 1), (gaAe * 100).reshape(-1, 1)) -->
-<!--         xfiteA = np.linspace(0, maxaxis, 100) -->
-<!--         yfiteA = modele.predict(xfiteA.reshape(-1, 1)) -->
-<!--         plt.plot(xfiteA, yfiteA, 'g', label = 'April R = %.3f'%(scipy.stats.pearsonr(geAe, gaAe * 100)[0]),  -->
-<!--                  linestyle='dashed', color='0') -->
-<!--         ax.scatter(geA, gaA * 100, color='0', label='', edgecolor='none', s=200) -->
-
-<!--         modele = LinearRegression(fit_intercept=True) -->
-<!--         modele.fit(geJe.reshape(-1, 1), (gaJe * 100).reshape(-1, 1)) -->
-<!--         xfiteJ = np.linspace(0, maxaxis, 100) -->
-<!--         yfiteJ = modele.predict(xfiteJ.reshape(-1, 1)) -->
-<!--         plt.plot(xfiteJ, yfiteJ, 'g', label = 'June R = %.3f'%(scipy.stats.pearsonr(geJe, gaJe * 100)[0]),  -->
-<!--                  linestyle='dashed', color='0.3') -->
-<!--         ax.scatter(geJ, gaJ * 100, color='0.3', label='', edgecolor='none', s=200) -->
-
-<!--         modele = LinearRegression(fit_intercept=True) -->
-<!--         modele.fit(geAUe.reshape(-1, 1), (gaAUe * 100).reshape(-1, 1)) -->
-<!--         xfiteAU = np.linspace(0, maxaxis, 100) -->
-<!--         yfiteAU = modele.predict(xfiteAU.reshape(-1, 1)) -->
-<!--         plt.plot(xfiteAU, yfiteAU, 'g', label = 'August R = %.3f'%(scipy.stats.pearsonr(geAUe, gaAUe * 100)[0]),  -->
-<!--                  linestyle='dashed', color='0.6') -->
-<!--         ax.scatter(geAU, gaAU * 100, color='0.6', label='', edgecolor='none', s=200) -->
-
-<!--         modele = LinearRegression(fit_intercept=True) -->
-<!--         modele.fit(geLe.reshape(-1, 1), (gaLe * 100).reshape(-1, 1)) -->
-<!--         xfiteL = np.linspace(0, maxaxis, 100) -->
-<!--         yfiteL = modele.predict(xfiteL.reshape(-1, 1)) -->
-<!--         plt.plot(xfiteL, yfiteL, 'g', label = 'Shotgun R = %.3f'%(scipy.stats.pearsonr(geLe, gaLe * 100)[0]),  -->
-<!--                  linestyle='dashed', color='0.8') -->
-<!--         ax.scatter(geL, gaL * 100, color='0.8', label='', edgecolor='none', s=200) -->
-
-<!--         ax.get_xaxis().tick_bottom();ax.get_yaxis().tick_left() -->
-<!--         ax.tick_params(labelsize=20) -->
-<!--         pylab.xlabel('expected ratio of taxa [%]', fontsize=20); pylab.ylabel('observed ratio of taxa [%]', fontsize=20) -->
-<!--         plt.title('%s %s' % (basecaller,classi2),fontsize=20) -->
-
-<!--         plt.legend(prop = {'size':20},frameon=False,loc=1, fontsize=20) -->
-<!--         plt.show() -->
-
-<!--         fig.savefig(outfolder+'positive_control/Plot_%s_%s.pdf' %(basecaller,classi), bbox_inches='tight') -->
-
-```
-
-### Hydrochemistry plots
-```{r}
-##################### Version 1.0 ###########################
-
-## Ionics Data, Max
-## Last Update - 19/01/2020 ##
-##############################
-
-library(readxl)
-library(stringr)
-library(gameofthrones)
-library(scales)
-library(car)
-
-setwd("/Users/ms37/Desktop/PuntSeq/science/src")
+# create output directory
+system(str_c("mkdir ",outfolder,"Hydrochemistry"))
 
 
 # 1. Gaillardet et al., Chemical Geology 1999
 #############################################
 
 # a. Import their table
-gaillardet <- read.table('../results/2019-06-12_Ionics/Gaillardet_1999_Table1.txt', header = T,
+gaillardet <- read.table(str_c(outfolder,"Supplementary_data/Gaillardet_1999_Table1.txt"), header = T,
                               sep = '\t', check.names = F, fill = T)
 for(i in 1:ncol(gaillardet)){
   gaillardet[,i] <- gsub(' ', '', gaillardet[,i])
 }
 
 # b. Add Ionics measurements to it
-puntseq <- read_xlsx('../results/2019-08-09_manuscript//Tables/Table_S1.xlsx', sheet = 2, skip = 3)[,-c(2,4:6)]
+puntseq <- read_xlsx(str_c(outfolder,"Supplementary_data/Supplementary_Table_S1.xlsx"), sheet = 2, skip = 3)[,-c(2,4:6)]
 puntseq <- as.data.frame(puntseq)
 puntseq[,1] <- gsub('1', 'April', puntseq[,1]); puntseq[,1] <- gsub('2', 'June', puntseq[,1]); puntseq[,1] <- gsub('3', 'August', puntseq[,1])
 rownames(puntseq) <- paste(puntseq[,1], puntseq[,2], sep = ' - ')
@@ -3557,7 +3504,7 @@ rownames(puntseq.HCO3_Na_vs_Ca_Na) <- rownames(puntseq)
 # d. Log/Log plot (0.1 - 20 (x) / 50 (y))
 
 ## Fig. S3e
-pdf('../results/2019-06-12_Ionics/2020-01-19_Carbonation_world_rivers_S3e.pdf', width = 11, height = 7)
+pdf(str_c(outfolder,"Hydrochemistry/",date,"_Carbonation_world_rivers_S3e.pdf"), width = 11, height = 7)
 transp <- 0.7
 par(mar = c(7,9,2,2))
 
@@ -3628,7 +3575,7 @@ legend("bottomright",
 dev.off()
 
 ## Month-by-month
-pdf('../results/2019-06-12_Ionics/2020-01-19_Carbonation_world_rivers_individual_months.pdf', width = 14, height = 8)
+pdf(str_c(outfolder,"Hydrochemistry/",date,"_Carbonation_world_rivers_individual_months.pdf"), width = 14, height = 8)
 transp <- 0.7
 par(mar = c(6,5,5,2))
 
@@ -3692,34 +3639,61 @@ legend("topright", c('1 (Byrons Pool)', '2 (Byrons Pool)', '3 (Grantchester Mead
 dev.off()
 ```
 
-### Classifier comparison
+## Classifier comparison
+### On mock community 
+#### Observed vs expected for Minimap2
 ```{r}
-############ Taxonomic classifier comparison #############
-##################### Version 1.0 ########################
+# create output directory
+system(str_c("mkdir ",outfolder,"Tool_benchmarking"))
 
-## Maximilian Stammnitz, mrs72
-## Last Update - 26/01/2020 ##
-##############################
+# Load marority vote classifiered set of 10,000 reads from sample 8
+data <- read_tsv(str_c(outfolder,"Supplementary_data/2020-01-31_Minimap2_results_family_level_observed_vs_expected_full.tsv"))
 
-library(readxl)
+ggscatter(data, x = "abundance_expected", y = "abundance_observed", size = 4)+
+  geom_abline(intercept = 0, slope = 1, color="black", 
+                 linetype="solid", size=1)+
+  #geom_point(aes(color=Time))+
+  scale_color_grey()+
+  labs(title = "", caption = waiver(), x="expected abundance [%]", y="observed abundance [%]")+
+  theme(legend.position="bottom")+
+  xlim(0, 65)+
+  ylim(0, 65)
 
-setwd("/Users/ms37/Desktop/PuntSeq/science/src")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_observed_vs-expected-plot_full.png"), width = 8, height = 8, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_observed_vs-expected-plot_full.pdf"), width = 8, height = 8, units = "cm")
 
+data.raw <- read_tsv(str_c(outfolder,"Supplementary_data/2020-01-31_Minimap2_results_family_level_observed_vs_expected_withoutEntero.tsv"))
 
+ggscatter(data.raw, x = "abundance_expected", y = "abundance_observed", size = 4)+
+  geom_abline(intercept = 0, slope = 1, color="black", 
+                 linetype="solid", size=1)+
+  #geom_point(aes(color=Time))+
+  scale_color_grey()+
+  labs(title = "", caption = waiver(), x="expected abundance [%]", y="observed abundance [%]")+
+  theme(legend.position="bottom")+
+  xlim(0, 35)+
+  ylim(0, 35)
+
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_observed_vs-expected-plot.png"), width = 8, height = 8, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_observed_vs-expected-plot.pdf"), width = 8, height = 8, units = "cm") 
+```
+
+#### RMSE comparision
+```{r}
 # 1. Load table
 ###############
 
 ## Cambridge weather sensor data
-tool.performance <- as.matrix(read_xlsx('./Fig_S1_b_table.xlsx', sheet = 1))
-
+tool.performance <- as.matrix(read_xlsx(str_c(outfolder,"Supplementary_data/Fig_S1_b_table.xlsx"), sheet = 1))
 
 # 2. Plot
 #########
 
+# version 1
 results <- as.numeric(tool.performance[nrow(tool.performance),-1])
 names(results) <- colnames(tool.performance)[-1]
 
-pdf('./2020-01-26_FigS1b.pdf', width = 7, height = 6)
+pdf(str_c(outfolder,"Tool_benchmarking/",date,"_RMSE-.pdf"), width = 7, height = 6)
 plot(x = results[-1], y = rep(1, length(results[-1])),
      pch = 21, cex = 2, bg = 'black', col = 'white', bty = 'n',
      xlab = '', ylab = '', main = '', xaxt = 'n', yaxt = 'n',
@@ -3731,290 +3705,409 @@ for (i in 2:length(results)){
   lines(x = c(results[i], results[i]), y = c(1, 1.5), lwd = 0.5, lty = 1)
 }
 dev.off()
+
+# version 2
+df <- data.frame(RMSE_reduced=c(0.00,6.52,6.57,6.75,6.78,6.88,6.95,7.04,7.53,7.65,9.38,11.42,11.78,16.58),
+Classifier=c("expected","IDTAXA","Minimap2 (k = 15)","Blastn","SPINGO (k = 8)","SINTAX","Megablast","MAPseq","QUIIME 2 Blastn","QUIIME 2 Sklearn","Mothur (k = 6)","Kraken2 (k = 21)",	"Centrifuge",	"RDP"))
+
+set.seed(42)
+
+ggplot(df, aes(x = RMSE_reduced, y = 1, label = Classifier)) +
+  geom_point(aes(colour="white", fill="black"), shape = 21,size = 4, colour = "white")+
+  geom_text_repel(
+    nudge_y      = 0.03,
+    direction    = "x",
+    angle        = 90,
+    vjust        = 0,
+    segment.size = 0.5
+  ) +
+  xlim(0, 16.58) +
+  ylim(1, 0.8) +
+  theme_classic() +
+  theme(
+    axis.line.y  = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.y  = element_blank(),
+    axis.title.y = element_blank()
+  )+
+  theme(legend.position="none")
+
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_line-plot.png"), width = 15, height = 8, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_line-plot.pdf"), width = 15, height = 8, units = "cm") 
 ```
 
+### On freshwater community (sample 8)
+#### Comparison versus mayority vote
+```{r}
+# loop over all three sets
+for (set in 1:3){
 
-
-### Enterobacteriaceae abundance 
-#### Downsampled data
-```{r eval=FALSE}
-
-classifyr <- "kraken16S downsampled"
-
-subset_Ecoli <- filter(tidy_reads_kraken16S_downsampled, Name == "Enterobacteriaceae") %>%
-  mutate(Time = str_replace(Time, pattern = "August", "Aug")) %>%
-  transform( Time = factor(Time, levels = c("April","June","Aug")))
-
-ggplot(data = subset_Ecoli, mapping = aes(x = Time, y = Reads))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Reads (1)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#bdbdbd","#d9d9d9","#56B4E9","#ccebc5"))+
-  scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-in-downsampled_log_",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-in-downsampled_log_",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-ggplot(data = subset_Ecoli, mapping = aes(x = Time, y = Reads))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Reads (1)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#bdbdbd","#d9d9d9","#56B4E9","#ccebc5"))#+
-  #scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  #annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-in-downsampled_",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-in-downsampled_",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-
-ggplot(data = filter(subset_Ecoli, Location != "P"), mapping = aes(x = Time, y = Reads))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  #geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Reads (1)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#bdbdbd","#d9d9d9","#56B4E9","#ccebc5"))#+
-  #scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  #annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-in-downsampled_withoutpositive",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-in-downsampled_withoutpositive",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-```
-
-#### Full dataset
-```{r eval=FALSE}
-
-classifyr <- "kraken16S"
-
-subset_Ecoli <- filter(clean_classified_reads, Name == "Enterobacteriaceae" | Name == "Escherichia-Shigella") %>%
-  mutate(Time = str_replace(Time, pattern = "August", "Aug")) %>%
-  transform( Time = factor(Time, levels = c("April","June","Aug")))
-
-ggplot(data = subset_Ecoli, mapping = aes(x = Time, y = Reads, fill = Name))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Reads (1)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#56B4E9"))+
-  scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-total_log_",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-total_log_",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-
-ggplot(data = filter(subset_Ecoli, Location != "P"), mapping = aes(x = Time, y = Reads, fill = Name))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  #geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Reads (1)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#56B4E9"))#+
-  #scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  #annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-total_withoutpositive",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-total_withoutpositive",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-
-subset_Ecoli <- filter(clean_classified_reads, Name == "Enterobacteriaceae" | Name == "Escherichia-Shigella") %>%
-  mutate(Time = str_replace(Time, pattern = "August", "Aug")) %>%
-  transform( Time = factor(Time, levels = c("April","June","Aug")))
-
-ggplot(data = subset_Ecoli, mapping = aes(x = Time, y = Percentage, fill = Name))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  #geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Percentage (%)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#56B4E9"))#+
-  #scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  #annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-normalized",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-normalized",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-ggplot(data = filter(subset_Ecoli, Location != "P"), mapping = aes(x = Time, y = Reads, fill = Name))+
-  geom_bar(stat="identity",position = position_dodge(), width = 0.7)+
-  facet_grid(cols = vars(Location))+ 
-  #geom_hline(yintercept=30000, linetype="dashed", color = "black")+
-  labs(title = "Level of Classifiation",y = "Percentage (%)")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 22))+
-  theme(axis.text.x = element_text(size = 16))+
-  theme(axis.text.y = element_text(size = 14))+
-  theme(legend.text = element_text(size = 16))+
-  theme(legend.title = element_blank())+
-  #scale_fill_grey()+
-  scale_fill_manual(values=c("#636363","#56B4E9"))#+
-  #scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
-  #annotation_logticks(sides="l")
-
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-normalized_withoutpositive",classifyr,".png"), width = 60, height = 15, units = "cm")
-ggsave(str_c("./Plots/",date,"Enterobacteriaceae-normalized_withoutpositive",classifyr,".pdf"), width = 60, height = 15, units = "cm") 
-
-```
-
-
-## Trash
-```{r eval=FALSE}
-# Distribution of classified vs. unclassified reads per location and time point on log10 scale
-subset1_1<- filter(clean_classified_reads, Name == "root" | Name == "unclassified", Location != "N" & Location != "P") %>%
-  mutate(Name = str_replace(Name, pattern = "root", "classified")) %>%
-  transform( Name = factor(Name, levels = c("unclassified","classified")))
-
-ggplot(data = subset1_1, mapping = aes(x = Location, y = Reads, fill = Name))+
-  geom_bar(stat="identity", position="identity",width = 0.7)+
-  facet_wrap(~Time)+
-  geom_hline(aes(yintercept=30000, color = "Downsampling"), linetype="dashed")+
-  labs(title = "Distribution of classified vs. unclassified reads per location and time point")+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5, size = 11))+
-  theme(axis.text.x = element_text(size = 7))+
-  theme(axis.text.y = element_text(size = 7))+
-  theme(legend.text = element_text(size = 8))+
-  theme(legend.title = element_blank())+
-  scale_fill_manual(values=c("#999999","#56B4E9"))+
-  scale_y_continuous(labels = scientific_1, trans='log10')+
-  coord_cartesian(ylim = c(10,10000000))
-
-ggsave(str_c(outfolder,date,"_Distribution-of-classified-unclassified-reads-per-location-time-point_V3_",classifyr,".png"), width = 20, height = 15, units = "cm")
-ggsave(str_c(outfolder,date,"_Distribution-of-classified-unclassified-reads-per-location-time-point_V3_",classifyr,".pdf"), width = 20, height = 15, units = "cm") 
-```
-
-
-```{r eval=FALSE}
-# Prepare data for annotation 
-
-selection <- filter(tidy_reads_kraken16S_downsampled, TaxRank == "F", Percentage != "NA", Location != "N" & Location != "P") %>%
-  group_by(Name,Time) %>%
-  summarize(Sum = sum(Reads, na.rm = TRUE)) %>%
-  ungroup(Name,Time) %>%
-  mutate(ring_level = ifelse(Time == "April", "1", Time)) %>%
-  mutate(ring_level = ifelse(Time == "June", "2", ring_level)) %>%
-  mutate(ring_level = ifelse(Time == "August", "3", ring_level)) %>%
-  mutate(percentage = ifelse(Time == "April", Sum/(7*30000), 0)) %>%
-  mutate(percentage = ifelse(Time == "June", Sum/(2*30000), percentage)) %>%
-  mutate(percentage = ifelse(Time == "August", Sum/(7*30000), percentage)) %>%
-  mutate(color = ifelse(Time == "April", "green", "black")) %>%
-  mutate(color = ifelse(Time == "June", "red", color)) %>%
-  mutate(color = ifelse(Time == "August", "blue", color)) %>%
-  mutate(annotation = Name) %>%
-  mutate(back_color = "k") %>%
-  mutate(clade_color = "k") %>%
-  mutate(clade_m_size = 40) %>%
-  mutate(height = 1) %>%
-  filter(percentage > 0.0075)
+  # Load marority vote classifiered set of 10,000 reads from sample 8
+  mayority.vote.raw <- read_tsv(str_c(outfolder,"Supplementary_data/summary_sample8_rep",set,"_family_majority_vote.tsv"))
   
-selection$ring_alpha <- "ring_alpha"
-selection$ring_hight <- "ring_height"
-selection$ring_color <- "ring_color"
-selection$option_a <- "annotation" 
-selection$option_abc <- "annotation_background_color" 
-selection$option_cmc <- "clade_marker_color" 
-selection$option_cms <- "clade_marker_size" 
+  # count number of classified and unclassified reads on family level
+  for (i in 2:(ncol(mayority.vote.raw))){
+    classification.col <- as.data.frame(table(!is.na(mayority.vote.raw[,i])))
+    classification.col <- mutate(classification.col, Tool = colnames(mayority.vote.raw[,i])) %>%
+      mutate(Perc = (Freq/nrow(mayority.vote.raw)*100)) %>%
+      rename(Type = Var1) %>%
+      mutate(Type = str_replace(Type, pattern = "FALSE", "unclassified")) %>%
+      mutate(Type = str_replace(Type, pattern = "TRUE", "classified")) %>%
+      mutate(Set = set) 
+        
+    if (i == 2){
+      classification.total <- classification.col
+    } else {
+      classification.total <- rbind(classification.total, classification.col)
+    }
+  }
+  
+  mayority.vote <- mayority.vote.raw
+  # loop over all rows and columns and compare against mayority vote (in last column) -> create binary matrix
+  for (i in 2:(ncol(mayority.vote)-1)){
+    for (j in 1:nrow(mayority.vote.raw)){
+      if (!is.na(mayority.vote[j,ncol(mayority.vote)])){
+        if (!is.na(mayority.vote[j,i])){
+          if ( mayority.vote[j,i] == mayority.vote[j,ncol(mayority.vote)]){
+            mayority.vote[j,i] = "3" # Match
+          } 
+          else {
+            mayority.vote[j,i] = "2" # Mismatch
+          }
+        } 
+        else {
+            mayority.vote[j,i] = "2" # Mismatch
+        }
+      } 
+      else {
+        if (!is.na(mayority.vote[j,i])){
+          mayority.vote[j,i] = "1" # Over classification
+        } else {
+          mayority.vote[j,i] = "0" 
+        }
+      }
+    }
+  }
+  
+  # add to classification.total 
+  for (i in 2:(ncol(mayority.vote)-1)){
+    classification.all <- as.data.frame(table(mayority.vote[,i]))
+    classification.all <- mutate(classification.all, Tool = colnames(mayority.vote[,i])) %>%
+      mutate(Perc = (Freq/nrow(mayority.vote.raw)*100)) %>%
+      rename(Type = Var1) %>%
+      mutate(Type = str_replace(Type, pattern = "1", "over classified")) %>%
+      mutate(Type = str_replace(Type, pattern = "2", "false classified")) %>%
+      mutate(Type = str_replace(Type, pattern = "3", "true classified")) %>%
+      mutate(Set = set) %>%
+      filter(Type != "0")
+    
+    classification.total <- rbind(classification.total, classification.all)
+  }
 
-write_tsv(select(selection, Name, ring_alpha, ring_level, percentage), "tmp_tree-annotation_2-0.txt", col_names = FALSE)
-write_tsv(select(selection, Name, ring_hight, ring_level, height), "tmp_tree-annotation_2-1.txt", col_names = FALSE)
-write_tsv(select(selection, Name, ring_color, ring_level, color), "tmp_tree-annotation_2-2.txt", col_names = FALSE)
-write_tsv(select(selection, Name, option_a, annotation), "tmp_tree-annotation_2-3.txt", col_names = FALSE)
-write_tsv(select(selection, Name, option_abc, back_color), "tmp_tree-annotation_2-4.txt", col_names = FALSE)
-write_tsv(select(selection, Name, option_cmc, clade_color), "tmp_tree-annotation_2-5.txt", col_names = FALSE)
-write_tsv(select(selection, Name, option_cms, clade_m_size), "tmp_tree-annotation_2-6.txt", col_names = FALSE)
+  # add missing value
+  Type <- c("over classified")
+  Tool <- c("minimap2(12)")
+  Perc <- c(0)
+  Freq <- c(0)
+  Set <- set
+  classification.minimap <- data.frame(Type, Freq, Tool, Perc,Set)
+  classification.total.final <- rbind(classification.total, classification.minimap)
+  
+  classification.total.final <- mutate(classification.total.final, Panel = ifelse(Type == "classified" | Type == "unclassified", "overview", "classified reads")) %>%
+    transform(Panel = factor(Panel, levels = c("overview","classified reads")))%>%
+    transform(Type = factor(Type, levels = c("classified","true classified","false classified","over classified","unclassified")))
+    
+  # plot data
+  ggplot(filter(classification.total.final,Type != "classified" & Tool != "gt" & Tool != "qiime_sklearn"), aes(x = fct_reorder(Tool,Perc), y = Perc, fill = Type)) +
+    geom_bar(stat="identity", position = position_dodge(), width = 0.7,  color="grey30")+
+      geom_hline(yintercept=100, linetype="dashed", color = "grey")+
+        labs( y = "Percentage", x="")+
+        #facet_grid(rows = vars(Panel))+ 
+        scale_y_continuous(breaks=seq(0, 108, 20), limits = c(0,108))+
+        theme_bw()+
+        theme(panel.grid.major.x = element_blank())+
+        theme(plot.title = element_text(hjust = 0.5, size = 11))+
+        theme(axis.text.x = element_text(size = 8))+
+        theme(axis.text.y = element_text(size = 7))+
+        theme(legend.text = element_text(size = 8))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+        theme(legend.title = element_blank())+
+        scale_fill_npg()+
+        #scale_fill_manual(values = c("#56B4E9","blue","red","grey40","grey85"))+
+      geom_text(aes(label = round(Perc,0), x = fct_reorder(Tool,Perc), y = Perc), position = position_dodge(width = 0.3), vjust = -0.6, color="black", size=3)+
+    theme(legend.position="top")
+  
+  ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_sample8_mv-comparision_rep",set,".png"), width = 12, height = 8, units = "cm")
+  ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_sample8_mv-comparision_rep",set,".pdf"), width = 12, height = 8, units = "cm") 
 
-system("cat tmp_tree-annotation_2-0.txt tmp_tree-annotation_2-1.txt tmp_tree-annotation_2-2.txt tmp_tree-annotation_2-3.txt tmp_tree-annotation_2-4.txt tmp_tree-annotation_2-5.txt tmp_tree-annotation_2-6.txt > tmp_tree-annotation_2.txt")
-system(str_c("sed -e 's/ /_/g' tmp_tree-annotation_2.txt > ./",outfolder,"Phylogenetic_tree/tree-annotation_2.txt"))
-system("rm tmp*")
-
-# Extract all phyla to plot
-labels <- filter(tidy_classified_reads_april_absolute, TaxRank == "P") %>%
-  select(Name) %>%
-  unique() 
-labels$ring_hight <- "ring_height"
+}  
 ```
 
+#### Relative abundance of freshwater sample for all classifier
+```{r}
+# loop over all three sets
+for (set in 1:3){
 
-```{bash eval=FALSE}
-# can take a while (>20 min)
+  # Load marority vote classifiered set of 10,000 reads from sample 8
+  mayority.vote.raw <- read_tsv(str_c(outfolder,"Supplementary_data/summary_sample8_rep",set,"_family_majority_vote.tsv"))
+  
+  for (i in 2:(ncol(mayority.vote.raw))){
+    abundance.col <- as.data.frame(table(mayority.vote.raw[,i]))
+    abundance.col <- mutate(abundance.col, Tool = colnames(mayority.vote.raw[,i])) %>%
+      mutate(Perc = (Freq/nrow(mayority.vote.raw)*100)) %>%
+      rename(Family = Var1) #%>%
+      #mutate(Type = str_replace(Type, pattern = "FALSE", "unclassified")) %>%
+      #mutate(Type = str_replace(Type, pattern = "TRUE", "classified"))
+    
+    if (i == 2){
+      abundance.total <- abundance.col
+    } else {
+       abundance.total <- rbind(abundance.total, abundance.col)
+    }
+  }
+  
+  # select top 10 most abundant taxa with the highest total abundance (percentage) among all samples
+  subset_tmp <- abundance.total %>%
+    group_by(Family) %>%
+    summarize(Sum = sum(Freq)) %>%
+    ungroup() %>%
+    arrange(desc(Sum)) 
+  
+  legend <- subset_tmp$Family %>%
+    unique()
+  a<- as.character(legend[1:10])
+  legend <- c(a, "Other")
+  
+  subset_rank_top10 <- transform(abundance.total, Family = factor(Family, levels = legend)) %>%
+          mutate(Tool = str_replace(Tool, pattern = "gt", "majority vote")) %>%
+          transform(abundance.total, Tool = factor(Tool, levels = c("majority vote","spingo(8)","minimap2(12)","idtaxa","mapseq","megablast","blastn","qiime_blastn","sintax","kraken2","centrifuge","rdp","mothur(6)","qiime_sklearn"))) %>%
+          mutate(Family = replace_na(Family, "Other"))
+  
+  
+  # plot relativ abundance (Version 3) the top 10 most abundant taxa with the highest total abundance (percentage) among all samples
+  ggplot(data = filter(subset_rank_top10, Tool != "qiime_sklearn"), mapping = aes(x = Tool, y = Perc, fill = forcats::fct_rev(Family)))+
+    geom_bar(stat="identity", position = "fill", width = 0.3)+
+    #facet_grid(cols = vars(Location))+ 
+    labs(y = "Abundance")+
+    theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5, size = 22))+
+    theme(axis.text.x = element_text(size = 16))+
+    theme(axis.text.y = element_text(size = 14))+
+    theme(legend.text = element_text(size = 16))+
+    theme(legend.title = element_blank())+
+    scale_fill_manual(values = rev(brewer.pal(11,"Set3")))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+    theme(legend.position="none")
+  
+  # save plot
+  ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_Rel_abundance_sample8_run",set,".png"), width = 13, height = 10, units = "cm")
+  ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_Rel_abundance_sample8_run",set,".pdf"), width = 13, height = 10, units = "cm")
+}
 
-DATE=`date +%Y-%m-%d`
-outfolder="${DATE}_PuntSeq_R-analysis_output/"
-sub_folder="${outfolder}Phylogenetic_tree/"
-
-mkdir ${sub_folder}
-
-tree="tax_slv_ssu_132_annotated"
-
-# download tree of life from github
-wget -nc https://raw.githubusercontent.com/d-j-k/puntseq/master/${tree}.tre -O ${sub_folder}${tree}.tre --no-check-certificate
-
-## Visualise using the graphlan package
-
-# Activate conda environment 
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate PuntSeq-analysis-env
-
-#Installation of graphlan tool
-#conda install -c bioconda graphlan
-
-# Print version information
-graphlan.py -v
-
-# Add annotation to the tree and overlay with Cam seq data
-graphlan_annotate.py ${sub_folder}${tree}.tre ${sub_folder}${tree}.annot1.txt --annot ${sub_folder}tree-annotation_1.txt
-
-#graphlan_annotate.py ${sub_folder}${tree}.annot1.txt ${sub_folder}${tree}.annot2.txt --annot ${sub_folder}tree-annotation_2.txt
-
-# Plot tree and save as .png file
-#graphlan.py ${sub_folder}${tree}.tre ${sub_folder}${tree}.plot0.png --format png --dpi 300 --size 15 --pad 0.6
-
-graphlan.py ${sub_folder}${tree}.annot1.txt ${sub_folder}${tree}.plot1.png --format png --dpi 300 --size 15 --pad 0.6
-
-#graphlan.py ${sub_folder}${tree}.annot2.txt ${sub_folder}${tree}.plot2.png --format png --dpi 300 --size 15 --pad 0.6 
-
-# Deactivate conda environment
-conda deactivate
 ```
+
+#### Runtime and Memory usage
+```{r}
+
+## speed
+speed <- read_xlsx(str_c(outfolder,"Supplementary_data/2020-11-03_tool_benchmark_resources.xlsx"), sheet = 1) %>%
+  mutate(Set = str_replace(Set, pattern = "set", "")) %>%
+  separate(Set, c("Reads","Rep"), "_") %>%
+  gather(key = "Tool", value = "Speed", 3:14)
+
+speed_av_1 <- speed %>%
+  group_by(Tool,Reads) %>%
+  summarize(Speed_av = mean(Speed, na.rm = TRUE)) %>%
+  ungroup()
+speed_av_2 <- speed %>%
+  group_by(Tool,Reads) %>%
+  summarize(Speed_sd = sd(Speed, na.rm = TRUE)) %>%
+  ungroup()
+speed_av <- left_join(speed_av_1, speed_av_2) 
+
+order.df <- speed_av %>%
+  group_by(Tool) %>%
+  summarize(Mean = mean(Speed_av, na.rm = TRUE)) %>%
+  arrange(Mean) %>%
+  select(Tool) %>%
+  unique()
+order <- order.df$Tool
+
+speed$Tool <- factor(speed$Tool, levels = order)
+speed$Reads <- factor(speed$Reads, levels = c("100","1000","10000")) 
+  
+## average memory
+avmem <- read_xlsx(str_c(outfolder,"Supplementary_data/2020-11-03_tool_benchmark_resources.xlsx"), sheet = 2) %>%
+  mutate(Set = str_replace(Set, pattern = "set", "")) %>%
+  separate(Set, c("Reads","Rep"), "_") %>%
+  gather(key = "Tool", value = "Mem", 3:14) %>%
+  mutate(Mem = Mem/1000)
+avmem$Tool <- factor(avmem$Tool, levels = order) 
+avmem$Reads <- factor(avmem$Reads, levels = c("100","1000","10000")) 
+
+# version 1
+# plot runtime
+ggline(speed, x = "Reads", y = "Speed", add = "mean_sd", color = "Tool", size = 0.5, shape="Tool") +
+  scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+scale_fill_grey() + 
+  scale_color_grey() + 
+  theme_classic() +
+  xlab("Reads") +
+  ylab("Runtime (s)") +
+  guides(colour = guide_legend(reverse=T)) +
+  guides(shape = guide_legend(reverse=T))
+
+# save plot
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_runtime.pdf"), width = 11, height = 10, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_runtime.png"), width = 11, height = 10, units = "cm")
+
+# plot mem
+ggline(avmem, x = "Reads", y = "Mem", add = "mean_sd", color = "Tool", size = 0.5, shape="Tool") +
+  scale_color_grey() + 
+  theme_classic() +
+  xlab("Reads") +
+  ylab("Average memory use (Gb)") +
+  guides(colour = guide_legend(reverse=T)) +
+  guides(shape = guide_legend(reverse=T))
+
+# save plot
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_memory.pdf"), width = 11, height = 10, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_memory.png"), width = 11, height = 10, units = "cm")
+
+# version 2
+# plot runtime
+ggplot(speed, aes(x=Tool, y=Speed, color=Reads))+
+  geom_beeswarm(data=filter(speed, Reads =="100"), alpha = 0.8, priority='ascending')+
+  geom_beeswarm(data=filter(speed, Reads =="1000"), alpha = 0.8, priority='ascending')+
+  geom_beeswarm(data=filter(speed, Reads =="10000"), alpha = 0.8, priority='ascending')+
+  scale_y_continuous(trans='log10', breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_grey() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))+
+  xlab("") +
+  ylab("Runtime (s)")
+
+# save plot
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_runtime_v2.pdf"), width = 20, height = 8, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_runtime_v2.png"), width = 20, height = 8, units = "cm")
+
+# plot mem
+ggplot(avmem, aes(x=Tool, y=Mem, color=Reads))+
+  geom_beeswarm(data=filter(avmem, Reads =="100"), alpha = 0.8, priority='ascending')+
+  geom_beeswarm(data=filter(avmem, Reads =="1000"), alpha = 0.8, priority='ascending')+
+  geom_beeswarm(data=filter(avmem, Reads =="10000"), alpha = 0.8, priority='ascending')+
+  scale_color_grey() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))+
+  xlab("") +
+  ylab("Average memory use (Gb)") 
+
+# save plot
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_memory_v2.pdf"), width = 20, height = 8, units = "cm")
+ggsave(str_c(outfolder,"Tool_benchmarking/",date,"_memory_v2.png"), width = 20, height = 8, units = "cm")
+
+```
+
+## Processing of classifier output
+Filter the *.sam* output files from minimap2 on the command line
+```{bash}
+`for file in *.sam; do echo "==> ${file} <=="; grep -v '^@' "${file}" > "${file}.output"; done`
+`rename filtered.sam.output sam *filtered.sam.output`
+```
+
+### Pre-process the sam files to tsv files with unique read-taxa assignments
+```{python, eval=FALSE}
+import pandas as pd
+import io
+import os
+import requests
+import numpy as np
+
+# load all files from the SILVA database
+minit = pd.read_csv('seqid2taxid.map', sep='\t', index_col=0, header=None)
+sild = pd.read_csv('tax_slv_ssu_132.txt.1', sep='\t', header=None)
+sild.columns = ['tree','taxid','level','3','4']
+sild['ranks'] = [x.split(';')[-2] for x in sild.tree.values]
+sild['tree'] = [x[0:-1] for x in sild.tree]
+sild.index = sild.taxid
+namesdmp = pd.read_csv('names.dmp', sep='\t', index_col=0, header=None)
+
+# choose rank and month
+month = 'april'
+ranks = 'family'
+
+# choose dir of sam files
+dirc = '/path/to/sam/files/%s' %month
+
+# create 
+nr = 0
+for filename in os.listdir(dirc):
+    print(filename)
+    
+    try:
+        silva_10k = pd.read_csv('/hps/nobackup2/research/stegle/users2/lurban/puntseq/public/analysis/data/%s/convert/sam/%s' % (month,filename), 
+                         sep='\t', header=None, usecols = [0,2,4,13])
+    except: 
+        continue
+    
+    silva_10k.columns = ['Read_ID', 'id','MS', 'ASs']
+    silva_10k['ASs'] = silva_10k['ASs'].astype('str')
+    silva_10k['AS'] = [x.split(':i:')[-1] for x in silva_10k['ASs'].values]
+    silva_10k.dropna(axis=0, subset=['AS'], inplace=True)
+    silva_10k['AS'] = silva_10k['AS'].astype('float')
+    mini = silva_10k[silva_10k['AS'] == silva_10k.groupby('Read_ID')['AS'].transform('max')]
+    mini = mini[['Read_ID', 'MS', 'AS','id']]              
+
+    mini.columns = ['read','score','as','id']
+    mini = mini[~mini.id.isnull()]
+    mini['taxid'] = minit.loc[mini.id.values].values
+    mini['tree'] = sild.loc[mini.taxid.values]['tree'].values
+    mini['level'] = sild.loc[mini.taxid.values]['level'].values
+
+    mini['phylum'] = [x.split(';')[0] for x in mini.tree]
+    print(mini.phylum.unique())
+
+    # if genus
+    if ranks == 'genus':
+        mini = mini[mini.level=='genus'] 
+        mini['ranks'] = namesdmp.loc[mini.taxid][2].values 
+        mini.index = mini.read  
+        for i in mini.index[mini.duplicated(subset='read', keep=False)].unique():
+            minil = list(mini.loc[i].taxid.values)
+            if minil.count(minil[0]) != len(minil):
+                mini.drop(i)
+        mini.drop_duplicates(subset='read', keep='first', inplace=True)
+
+    # if family
+    if ranks == 'family':
+        mini = mini[(mini.level=='genus')|(mini.level=='family')] # 9349
+        mini['ranks'] = namesdmp.loc[mini.taxid][2].values   
+        mini.index = mini.read
+        for i in mini.index[mini.duplicated(subset='read', keep=False)].unique():
+            minil = list(mini.loc[i].taxid.values)
+            if minil.count(minil[0]) != len(minil):
+                minil2 = [x.split(';')[-2] for x in mini.loc[i].tree.values]
+                if minil2.count(minil2[0]) == len(minil2):
+                    mini['ranks'].loc[i] = minil2[0]
+                else: 
+                    mini.drop(i)
+        mini.drop_duplicates(subset='read', keep='first', inplace=True)           
+        mini['genuss'] = [sild.loc[x].tree.split(';')[-2] for x in mini.taxid]
+        mini['ranks'][mini.level=='genus'] = mini['genuss'][mini.level=='genus']
+
+    mini2 = pd.DataFrame(mini.ranks.value_counts())
+    if nr==0:
+        minif = mini2.copy()
+        minif.columns.values[nr] = filename.split('.')[0]
+    else:
+        minif = minif.merge(mini2, left_index=True, right_index=True, how='outer')
+        minif.columns.values[nr] = filename.split('.')[0]
+    nr = nr+1
+    
+# describe all missing bacteria as absent
+minif = minif.fillna(0)  
+  
+# save the final txt files  
+minif.to_csv(minimap2_k12_%s_%s.txt' %(ranks,month), sep='\t')
+
+```
+
